@@ -91,7 +91,7 @@ _NUM_EVAL_FRAMES = flags.DEFINE_integer(
 )  # Per iteration.
 _LEARN_PERIOD = flags.DEFINE_integer('learn_period', 16, '')
 _RESULTS_CSV_PATH = flags.DEFINE_string(
-    'results_csv_path', '/tmp/results.csv', ''
+    'results_csv_path', './tmp/results.csv', ''
 )
 
 
@@ -105,8 +105,10 @@ def main(argv):
   )
 
   if _RESULTS_CSV_PATH.value:
+    logging.info(f'Saving results to {_RESULTS_CSV_PATH.value}')
     writer = parts.CsvWriter(_RESULTS_CSV_PATH.value)
   else:
+    logging.info(f'No save directory specified!')
     writer = parts.NullWriter()
 
   def environment_builder():
@@ -234,7 +236,7 @@ def main(argv):
   )
 
   # Set up checkpointing.
-  checkpoint = parts.NullCheckpoint()
+  checkpoint = parts.NullCheckpoint() # does not work and does nothing -- TODO
 
   state = checkpoint.state
   state.iteration = 0

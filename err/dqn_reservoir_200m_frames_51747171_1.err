@@ -1,0 +1,42 @@
+
+Due to MODULEPATH changes, the following have been reloaded:
+  1) mii/1.1.2
+
+The following have been reloaded with a version change:
+  1) StdEnv/2023 => StdEnv/2020           5) libfabric/1.18.0 => libfabric/1.10.1
+  2) gcccore/.12.3 => gcccore/.9.3.0      6) openmpi/4.1.5 => openmpi/4.0.3
+  3) gentoo/2023 => gentoo/2020           7) ucx/1.14.1 => ucx/1.8.0
+  4) imkl/2023.2.0 => imkl/2020.1.217
+
+
+Lmod is automatically replacing "intel/2020.1.217" with "gcc/9.3.0".
+
+
+Due to MODULEPATH changes, the following have been reloaded:
+  1) libfabric/1.10.1     2) openmpi/4.0.3     3) ucx/1.8.0
+
+ERROR: pip's dependency resolver does not currently take into account all the packages that are installed. This behaviour is the source of the following dependency conflicts.
+tensorflow 2.9.0+computecanada requires flatbuffers<2,>=1.12, but you have flatbuffers 2.0+computecanada which is incompatible.
+tensorflow 2.9.0+computecanada requires gast<=0.4.0,>=0.2.1, but you have gast 0.5.3+computecanada which is incompatible.
+I1009 19:51:08.222602 23290295551808 xla_bridge.py:247] Unable to initialize backend 'tpu_driver': NOT_FOUND: Unable to find driver in registry given worker: 
+I1009 19:51:08.444595 23290295551808 xla_bridge.py:247] Unable to initialize backend 'tpu': INVALID_ARGUMENT: TpuPlatform is not available.
+I1009 19:51:08.444866 23290295551808 run_atari.py:101] DQN with Reservoir Buffer on Atari on gpu.
+I1009 19:51:12.721013 23290295551808 run_atari.py:108] Saving results to ./results/dqn_reservoir_200m/seed_1.csv
+Traceback (most recent call last):
+  File "/cvmfs/soft.computecanada.ca/easybuild/software/2020/avx512/Core/python/3.9.6/lib/python3.9/runpy.py", line 197, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/cvmfs/soft.computecanada.ca/easybuild/software/2020/avx512/Core/python/3.9.6/lib/python3.9/runpy.py", line 87, in _run_code
+    exec(code, run_globals)
+  File "/lustre03/project/6006068/kapeluck/DQNRepos/dqn_mgsc_zoo/dqn_zoo/dqn_reservoir/run_atari.py", line 301, in <module>
+    app.run(main)
+  File "/localscratch/kapeluck.51747323.0/env/lib/python3.9/site-packages/absl/app.py", line 312, in run
+    _run_main(main, args)
+  File "/localscratch/kapeluck.51747323.0/env/lib/python3.9/site-packages/absl/app.py", line 258, in _run_main
+    sys.exit(main(argv))
+  File "/lustre03/project/6006068/kapeluck/DQNRepos/dqn_mgsc_zoo/dqn_zoo/dqn_reservoir/run_atari.py", line 109, in main
+    writer = parts.CsvWriter(_RESULTS_CSV_PATH.value)
+  File "/lustre03/project/6006068/kapeluck/DQNRepos/dqn_mgsc_zoo/dqn_zoo/parts.py", line 459, in __init__
+    os.makedirs(dirname)
+  File "/cvmfs/soft.computecanada.ca/easybuild/software/2020/avx512/Core/python/3.9.6/lib/python3.9/os.py", line 225, in makedirs
+    mkdir(name, mode)
+FileExistsError: [Errno 17] File exists: './results/dqn_reservoir_200m'

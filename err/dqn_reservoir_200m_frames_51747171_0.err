@@ -1,0 +1,150 @@
+
+Due to MODULEPATH changes, the following have been reloaded:
+  1) mii/1.1.2
+
+The following have been reloaded with a version change:
+  1) StdEnv/2023 => StdEnv/2020           5) libfabric/1.18.0 => libfabric/1.10.1
+  2) gcccore/.12.3 => gcccore/.9.3.0      6) openmpi/4.1.5 => openmpi/4.0.3
+  3) gentoo/2023 => gentoo/2020           7) ucx/1.14.1 => ucx/1.8.0
+  4) imkl/2023.2.0 => imkl/2020.1.217
+
+
+Lmod is automatically replacing "intel/2020.1.217" with "gcc/9.3.0".
+
+
+Due to MODULEPATH changes, the following have been reloaded:
+  1) libfabric/1.10.1     2) openmpi/4.0.3     3) ucx/1.8.0
+
+ERROR: pip's dependency resolver does not currently take into account all the packages that are installed. This behaviour is the source of the following dependency conflicts.
+tensorflow 2.9.0+computecanada requires flatbuffers<2,>=1.12, but you have flatbuffers 2.0+computecanada which is incompatible.
+tensorflow 2.9.0+computecanada requires gast<=0.4.0,>=0.2.1, but you have gast 0.5.3+computecanada which is incompatible.
+I1009 19:51:08.235306 23232157267776 xla_bridge.py:247] Unable to initialize backend 'tpu_driver': NOT_FOUND: Unable to find driver in registry given worker: 
+I1009 19:51:08.444678 23232157267776 xla_bridge.py:247] Unable to initialize backend 'tpu': INVALID_ARGUMENT: TpuPlatform is not available.
+I1009 19:51:08.444934 23232157267776 run_atari.py:101] DQN with Reservoir Buffer on Atari on gpu.
+I1009 19:51:12.721314 23232157267776 run_atari.py:108] Saving results to ./results/dqn_reservoir_200m/seed_0.csv
+I1009 19:51:13.255435 23232157267776 run_atari.py:128] Environment: pong
+I1009 19:51:13.255913 23232157267776 run_atari.py:129] Action spec: DiscreteArray(shape=(), dtype=int32, name=action, minimum=0, maximum=5, num_values=6)
+I1009 19:51:13.256288 23232157267776 run_atari.py:130] Observation spec: (Array(shape=(210, 160, 3), dtype=dtype('uint8'), name='rgb'), Array(shape=(), dtype=dtype('int32'), name='lives'))
+I1009 19:51:23.161054 23232157267776 run_atari.py:254] Training iteration 0.
+I1009 19:51:23.161711 23232157267776 run_atari.py:261] Evaluation iteration 0.
+I1009 19:56:44.437821 23232157267776 run_atari.py:289] iteration:   0, frame:     0, eval_episode_return: -20.98, train_episode_return:  nan, eval_num_episodes: 158, train_num_episodes:   0, eval_frame_rate: 1556, train_frame_rate:  nan, train_exploration_epsilon: 1.000, train_state_value: nan, normalized_return: -0.008, capped_normalized_return: -0.008, human_gap: 1.008
+I1009 19:56:44.996757 23232157267776 run_atari.py:254] Training iteration 1.
+I1009 19:59:06.141203 23232157267776 agent.py:181] Begin learning
+I1009 20:11:13.188954 23232157267776 run_atari.py:261] Evaluation iteration 1.
+I1009 20:16:37.805069 23232157267776 run_atari.py:289] iteration:   1, frame: 1000000, eval_episode_return: -20.68, train_episode_return: -20.34, eval_num_episodes: 158, train_num_episodes: 272, eval_frame_rate: 1540, train_frame_rate: 1152, train_exploration_epsilon: 0.820, train_state_value: -0.141, normalized_return: 0.000, capped_normalized_return: 0.000, human_gap: 1.000
+I1009 20:16:38.337470 23232157267776 run_atari.py:254] Training iteration 2.
+I1009 20:32:16.078013 23232157267776 run_atari.py:261] Evaluation iteration 2.
+I1009 20:37:51.644598 23232157267776 run_atari.py:289] iteration:   2, frame: 2000000, eval_episode_return: -20.97, train_episode_return: -20.32, eval_num_episodes: 147, train_num_episodes: 274, eval_frame_rate: 1490, train_frame_rate: 1066, train_exploration_epsilon: 0.595, train_state_value: -0.252, normalized_return: -0.008, capped_normalized_return: -0.008, human_gap: 1.008
+I1009 20:37:52.174734 23232157267776 run_atari.py:254] Training iteration 3.
+I1009 20:53:32.559880 23232157267776 run_atari.py:261] Evaluation iteration 3.
+I1009 20:58:57.617865 23232157267776 run_atari.py:289] iteration:   3, frame: 3000000, eval_episode_return: -20.97, train_episode_return: -20.38, eval_num_episodes: 152, train_num_episodes: 278, eval_frame_rate: 1538, train_frame_rate: 1063, train_exploration_epsilon: 0.370, train_state_value: -0.476, normalized_return: -0.008, capped_normalized_return: -0.008, human_gap: 1.008
+I1009 20:58:58.151127 23232157267776 run_atari.py:254] Training iteration 4.
+I1009 21:14:25.030723 23232157267776 run_atari.py:261] Evaluation iteration 4.
+I1009 21:19:43.883943 23232157267776 run_atari.py:289] iteration:   4, frame: 4000000, eval_episode_return: -20.89, train_episode_return: -20.57, eval_num_episodes: 124, train_num_episodes: 271, eval_frame_rate: 1568, train_frame_rate: 1079, train_exploration_epsilon: 0.145, train_state_value: -0.638, normalized_return: -0.005, capped_normalized_return: -0.005, human_gap: 1.005
+I1009 21:19:44.414134 23232157267776 run_atari.py:254] Training iteration 5.
+I1009 21:35:12.823827 23232157267776 run_atari.py:261] Evaluation iteration 5.
+I1009 21:40:36.645718 23232157267776 run_atari.py:289] iteration:   5, frame: 5000000, eval_episode_return: -20.41, train_episode_return: -20.42, eval_num_episodes:  76, train_num_episodes: 216, eval_frame_rate: 1544, train_frame_rate: 1077, train_exploration_epsilon: 0.100, train_state_value: -0.768, normalized_return: 0.008, capped_normalized_return: 0.008, human_gap: 0.992
+I1009 21:40:37.229041 23232157267776 run_atari.py:254] Training iteration 6.
+I1009 21:56:21.941648 23232157267776 run_atari.py:261] Evaluation iteration 6.
+I1009 22:01:47.122040 23232157267776 run_atari.py:289] iteration:   6, frame: 6000000, eval_episode_return: -20.41, train_episode_return: -20.01, eval_num_episodes:  63, train_num_episodes: 151, eval_frame_rate: 1538, train_frame_rate: 1059, train_exploration_epsilon: 0.100, train_state_value: -0.744, normalized_return: 0.008, capped_normalized_return: 0.008, human_gap: 0.992
+I1009 22:01:47.709088 23232157267776 run_atari.py:254] Training iteration 7.
+I1009 22:17:29.704065 23232157267776 run_atari.py:261] Evaluation iteration 7.
+I1009 22:22:58.783020 23232157267776 run_atari.py:289] iteration:   7, frame: 7000000, eval_episode_return: -18.24, train_episode_return: -18.97, eval_num_episodes:  51, train_num_episodes: 115, eval_frame_rate: 1519, train_frame_rate: 1062, train_exploration_epsilon: 0.100, train_state_value: -0.713, normalized_return: 0.070, capped_normalized_return: 0.070, human_gap: 0.930
+I1009 22:22:59.317895 23232157267776 run_atari.py:254] Training iteration 8.
+I1009 22:38:45.910484 23232157267776 run_atari.py:261] Evaluation iteration 8.
+I1009 22:44:21.708758 23232157267776 run_atari.py:289] iteration:   8, frame: 8000000, eval_episode_return: -14.80, train_episode_return: -17.80, eval_num_episodes:  40, train_num_episodes: 100, eval_frame_rate: 1489, train_frame_rate: 1056, train_exploration_epsilon: 0.100, train_state_value: -0.593, normalized_return: 0.167, capped_normalized_return: 0.167, human_gap: 0.833
+I1009 22:44:22.237594 23232157267776 run_atari.py:254] Training iteration 9.
+I1009 23:00:00.897542 23232157267776 run_atari.py:261] Evaluation iteration 9.
+I1009 23:05:26.929753 23232157267776 run_atari.py:289] iteration:   9, frame: 9000000, eval_episode_return: -16.00, train_episode_return: -15.26, eval_num_episodes:  40, train_num_episodes:  88, eval_frame_rate: 1534, train_frame_rate: 1065, train_exploration_epsilon: 0.100, train_state_value: -0.419, normalized_return: 0.133, capped_normalized_return: 0.133, human_gap: 0.867
+I1009 23:05:27.460407 23232157267776 run_atari.py:254] Training iteration 10.
+I1009 23:21:11.817294 23232157267776 run_atari.py:261] Evaluation iteration 10.
+I1009 23:26:43.997146 23232157267776 run_atari.py:289] iteration:  10, frame: 10000000, eval_episode_return: -17.40, train_episode_return: -16.14, eval_num_episodes:  50, train_num_episodes:  94, eval_frame_rate: 1505, train_frame_rate: 1059, train_exploration_epsilon: 0.100, train_state_value: -0.280, normalized_return: 0.093, capped_normalized_return: 0.093, human_gap: 0.907
+I1009 23:26:44.528069 23232157267776 run_atari.py:254] Training iteration 11.
+I1009 23:42:21.876473 23232157267776 run_atari.py:261] Evaluation iteration 11.
+I1009 23:47:43.984066 23232157267776 run_atari.py:289] iteration:  11, frame: 11000000, eval_episode_return: -17.26, train_episode_return: -16.44, eval_num_episodes:  34, train_num_episodes:  85, eval_frame_rate: 1552, train_frame_rate: 1067, train_exploration_epsilon: 0.100, train_state_value: -0.050, normalized_return: 0.097, capped_normalized_return: 0.097, human_gap: 0.903
+I1009 23:47:44.513600 23232157267776 run_atari.py:254] Training iteration 12.
+I1010 00:03:25.630223 23232157267776 run_atari.py:261] Evaluation iteration 12.
+I1010 00:08:51.322364 23232157267776 run_atari.py:289] iteration:  12, frame: 12000000, eval_episode_return: -15.38, train_episode_return: -15.32, eval_num_episodes:  39, train_num_episodes:  79, eval_frame_rate: 1535, train_frame_rate: 1063, train_exploration_epsilon: 0.100, train_state_value: -0.136, normalized_return: 0.151, capped_normalized_return: 0.151, human_gap: 0.849
+I1010 00:08:51.852023 23232157267776 run_atari.py:254] Training iteration 13.
+I1010 00:24:07.646186 23232157267776 run_atari.py:261] Evaluation iteration 13.
+I1010 00:29:29.347312 23232157267776 run_atari.py:289] iteration:  13, frame: 13000000, eval_episode_return: -13.49, train_episode_return: -13.51, eval_num_episodes:  35, train_num_episodes:  71, eval_frame_rate: 1554, train_frame_rate: 1092, train_exploration_epsilon: 0.100, train_state_value: -0.009, normalized_return: 0.204, capped_normalized_return: 0.204, human_gap: 0.796
+I1010 00:29:29.877666 23232157267776 run_atari.py:254] Training iteration 14.
+I1010 00:44:44.034007 23232157267776 run_atari.py:261] Evaluation iteration 14.
+I1010 00:50:04.998930 23232157267776 run_atari.py:289] iteration:  14, frame: 14000000, eval_episode_return: -11.06, train_episode_return: -12.75, eval_num_episodes:  31, train_num_episodes:  76, eval_frame_rate: 1558, train_frame_rate: 1094, train_exploration_epsilon: 0.100, train_state_value: 0.222, normalized_return: 0.273, capped_normalized_return: 0.273, human_gap: 0.727
+I1010 00:50:05.529978 23232157267776 run_atari.py:254] Training iteration 15.
+I1010 01:05:13.577587 23232157267776 run_atari.py:261] Evaluation iteration 15.
+I1010 01:10:35.405997 23232157267776 run_atari.py:289] iteration:  15, frame: 15000000, eval_episode_return: -6.30, train_episode_return: -12.23, eval_num_episodes:  27, train_num_episodes:  74, eval_frame_rate: 1554, train_frame_rate: 1101, train_exploration_epsilon: 0.100, train_state_value: 0.159, normalized_return: 0.408, capped_normalized_return: 0.408, human_gap: 0.592
+I1010 01:10:35.937457 23232157267776 run_atari.py:254] Training iteration 16.
+I1010 01:25:40.435912 23232157267776 run_atari.py:261] Evaluation iteration 16.
+I1010 01:30:56.734982 23232157267776 run_atari.py:289] iteration:  16, frame: 16000000, eval_episode_return: -4.67, train_episode_return: -9.31, eval_num_episodes:  27, train_num_episodes:  64, eval_frame_rate: 1581, train_frame_rate: 1106, train_exploration_epsilon: 0.100, train_state_value: 0.438, normalized_return: 0.454, capped_normalized_return: 0.454, human_gap: 0.546
+I1010 01:30:57.264202 23232157267776 run_atari.py:254] Training iteration 17.
+I1010 01:46:06.495633 23232157267776 run_atari.py:261] Evaluation iteration 17.
+I1010 01:51:23.694273 23232157267776 run_atari.py:289] iteration:  17, frame: 17000000, eval_episode_return:  0.14, train_episode_return: -8.73, eval_num_episodes:  29, train_num_episodes:  67, eval_frame_rate: 1576, train_frame_rate: 1100, train_exploration_epsilon: 0.100, train_state_value: 0.504, normalized_return: 0.590, capped_normalized_return: 0.590, human_gap: 0.410
+I1010 01:51:24.225437 23232157267776 run_atari.py:254] Training iteration 18.
+I1010 02:06:28.798806 23232157267776 run_atari.py:261] Evaluation iteration 18.
+I1010 02:11:40.192871 23232157267776 run_atari.py:289] iteration:  18, frame: 18000000, eval_episode_return: -2.50, train_episode_return: -8.21, eval_num_episodes:  30, train_num_episodes:  70, eval_frame_rate: 1606, train_frame_rate: 1105, train_exploration_epsilon: 0.100, train_state_value: 0.606, normalized_return: 0.516, capped_normalized_return: 0.516, human_gap: 0.484
+I1010 02:11:40.722270 23232157267776 run_atari.py:254] Training iteration 19.
+I1010 02:26:59.973207 23232157267776 run_atari.py:261] Evaluation iteration 19.
+I1010 02:32:30.233395 23232157267776 run_atari.py:289] iteration:  19, frame: 19000000, eval_episode_return: -9.08, train_episode_return: -9.66, eval_num_episodes:  37, train_num_episodes:  79, eval_frame_rate: 1514, train_frame_rate: 1088, train_exploration_epsilon: 0.100, train_state_value: 0.690, normalized_return: 0.329, capped_normalized_return: 0.329, human_gap: 0.671
+I1010 02:32:30.763091 23232157267776 run_atari.py:254] Training iteration 20.
+I1010 02:47:46.150778 23232157267776 run_atari.py:261] Evaluation iteration 20.
+I1010 02:52:56.813787 23232157267776 run_atari.py:289] iteration:  20, frame: 20000000, eval_episode_return: -14.91, train_episode_return: -7.55, eval_num_episodes:  69, train_num_episodes:  73, eval_frame_rate: 1609, train_frame_rate: 1092, train_exploration_epsilon: 0.100, train_state_value: 0.645, normalized_return: 0.164, capped_normalized_return: 0.164, human_gap: 0.836
+I1010 02:52:57.342555 23232157267776 run_atari.py:254] Training iteration 21.
+I1010 03:08:40.584059 23232157267776 run_atari.py:261] Evaluation iteration 21.
+I1010 03:14:05.377897 23232157267776 run_atari.py:289] iteration:  21, frame: 21000000, eval_episode_return: -2.97, train_episode_return: -7.81, eval_num_episodes:  29, train_num_episodes:  73, eval_frame_rate: 1539, train_frame_rate: 1060, train_exploration_epsilon: 0.100, train_state_value: 0.747, normalized_return: 0.502, capped_normalized_return: 0.502, human_gap: 0.498
+I1010 03:14:05.909360 23232157267776 run_atari.py:254] Training iteration 22.
+I1010 03:29:07.378540 23232157267776 run_atari.py:261] Evaluation iteration 22.
+I1010 03:34:35.623686 23232157267776 run_atari.py:289] iteration:  22, frame: 22000000, eval_episode_return:  0.93, train_episode_return: -6.12, eval_num_episodes:  30, train_num_episodes:  72, eval_frame_rate: 1523, train_frame_rate: 1109, train_exploration_epsilon: 0.100, train_state_value: 0.760, normalized_return: 0.613, capped_normalized_return: 0.613, human_gap: 0.387
+I1010 03:34:36.152609 23232157267776 run_atari.py:254] Training iteration 23.
+I1010 03:49:31.007116 23232157267776 run_atari.py:261] Evaluation iteration 23.
+I1010 03:54:50.609828 23232157267776 run_atari.py:289] iteration:  23, frame: 23000000, eval_episode_return:  5.36, train_episode_return: -1.08, eval_num_episodes:  28, train_num_episodes:  62, eval_frame_rate: 1564, train_frame_rate: 1118, train_exploration_epsilon: 0.100, train_state_value: 0.829, normalized_return: 0.738, capped_normalized_return: 0.738, human_gap: 0.262
+I1010 03:54:51.138955 23232157267776 run_atari.py:254] Training iteration 24.
+I1010 04:10:29.362026 23232157267776 run_atari.py:261] Evaluation iteration 24.
+I1010 04:16:01.519821 23232157267776 run_atari.py:289] iteration:  24, frame: 24000000, eval_episode_return:  2.57, train_episode_return:  1.60, eval_num_episodes:  28, train_num_episodes:  62, eval_frame_rate: 1505, train_frame_rate: 1066, train_exploration_epsilon: 0.100, train_state_value: 0.773, normalized_return: 0.659, capped_normalized_return: 0.659, human_gap: 0.341
+I1010 04:16:02.051229 23232157267776 run_atari.py:254] Training iteration 25.
+I1010 04:31:40.883139 23232157267776 run_atari.py:261] Evaluation iteration 25.
+I1010 04:37:10.965877 23232157267776 run_atari.py:289] iteration:  25, frame: 25000000, eval_episode_return:  0.97, train_episode_return:  0.94, eval_num_episodes:  32, train_num_episodes:  64, eval_frame_rate: 1515, train_frame_rate: 1065, train_exploration_epsilon: 0.100, train_state_value: 0.905, normalized_return: 0.614, capped_normalized_return: 0.614, human_gap: 0.386
+I1010 04:37:11.495510 23232157267776 run_atari.py:254] Training iteration 26.
+I1010 04:52:41.439183 23232157267776 run_atari.py:261] Evaluation iteration 26.
+I1010 04:58:06.416466 23232157267776 run_atari.py:289] iteration:  26, frame: 26000000, eval_episode_return:  6.17, train_episode_return:  5.19, eval_num_episodes:  29, train_num_episodes:  64, eval_frame_rate: 1539, train_frame_rate: 1075, train_exploration_epsilon: 0.100, train_state_value: 1.039, normalized_return: 0.761, capped_normalized_return: 0.761, human_gap: 0.239
+I1010 04:58:06.946238 23232157267776 run_atari.py:254] Training iteration 27.
+I1010 05:13:52.927142 23232157267776 run_atari.py:261] Evaluation iteration 27.
+I1010 05:19:24.211040 23232157267776 run_atari.py:289] iteration:  27, frame: 27000000, eval_episode_return:  11.92, train_episode_return:  3.40, eval_num_episodes:  39, train_num_episodes:  70, eval_frame_rate: 1509, train_frame_rate: 1057, train_exploration_epsilon: 0.100, train_state_value: 1.041, normalized_return: 0.924, capped_normalized_return: 0.924, human_gap: 0.076
+I1010 05:19:24.740648 23232157267776 run_atari.py:254] Training iteration 28.
+I1010 05:34:26.337817 23232157267776 run_atari.py:261] Evaluation iteration 28.
+I1010 05:39:44.855453 23232157267776 run_atari.py:289] iteration:  28, frame: 28000000, eval_episode_return:  10.88, train_episode_return:  3.99, eval_num_episodes:  41, train_num_episodes:  74, eval_frame_rate: 1570, train_frame_rate: 1109, train_exploration_epsilon: 0.100, train_state_value: 1.121, normalized_return: 0.895, capped_normalized_return: 0.895, human_gap: 0.105
+I1010 05:39:45.386777 23232157267776 run_atari.py:254] Training iteration 29.
+I1010 05:54:44.434765 23232157267776 run_atari.py:261] Evaluation iteration 29.
+I1010 06:00:02.026624 23232157267776 run_atari.py:289] iteration:  29, frame: 29000000, eval_episode_return:  8.89, train_episode_return:  2.54, eval_num_episodes:  44, train_num_episodes:  80, eval_frame_rate: 1574, train_frame_rate: 1112, train_exploration_epsilon: 0.100, train_state_value: 1.191, normalized_return: 0.838, capped_normalized_return: 0.838, human_gap: 0.162
+I1010 06:00:02.556290 23232157267776 run_atari.py:254] Training iteration 30.
+I1010 06:15:00.533411 23232157267776 run_atari.py:261] Evaluation iteration 30.
+I1010 06:20:23.688633 23232157267776 run_atari.py:289] iteration:  30, frame: 30000000, eval_episode_return:  8.33, train_episode_return:  4.25, eval_num_episodes:  43, train_num_episodes:  84, eval_frame_rate: 1547, train_frame_rate: 1114, train_exploration_epsilon: 0.100, train_state_value: 1.233, normalized_return: 0.822, capped_normalized_return: 0.822, human_gap: 0.178
+I1010 06:20:24.218687 23232157267776 run_atari.py:254] Training iteration 31.
+I1010 06:35:28.912394 23232157267776 run_atari.py:261] Evaluation iteration 31.
+I1010 06:40:48.125342 23232157267776 run_atari.py:289] iteration:  31, frame: 31000000, eval_episode_return:  10.30, train_episode_return:  4.41, eval_num_episodes:  44, train_num_episodes:  82, eval_frame_rate: 1566, train_frame_rate: 1105, train_exploration_epsilon: 0.100, train_state_value: 1.397, normalized_return: 0.878, capped_normalized_return: 0.878, human_gap: 0.122
+I1010 06:40:48.657032 23232157267776 run_atari.py:254] Training iteration 32.
+I1010 06:55:56.993154 23232157267776 run_atari.py:261] Evaluation iteration 32.
+I1010 07:01:14.887598 23232157267776 run_atari.py:289] iteration:  32, frame: 32000000, eval_episode_return:  5.42, train_episode_return:  2.88, eval_num_episodes:  38, train_num_episodes:  85, eval_frame_rate: 1573, train_frame_rate: 1101, train_exploration_epsilon: 0.100, train_state_value: 1.215, normalized_return: 0.740, capped_normalized_return: 0.740, human_gap: 0.260
+I1010 07:01:15.416690 23232157267776 run_atari.py:254] Training iteration 33.
+I1010 07:16:42.076482 23232157267776 run_atari.py:261] Evaluation iteration 33.
+I1010 07:22:03.528296 23232157267776 run_atari.py:289] iteration:  33, frame: 33000000, eval_episode_return:  7.71, train_episode_return:  5.82, eval_num_episodes:  42, train_num_episodes:  83, eval_frame_rate: 1555, train_frame_rate: 1079, train_exploration_epsilon: 0.100, train_state_value: 1.378, normalized_return: 0.805, capped_normalized_return: 0.805, human_gap: 0.195
+I1010 07:22:04.057976 23232157267776 run_atari.py:254] Training iteration 34.
+I1010 07:37:10.810725 23232157267776 run_atari.py:261] Evaluation iteration 34.
+I1010 07:42:28.644443 23232157267776 run_atari.py:289] iteration:  34, frame: 34000000, eval_episode_return:  5.55, train_episode_return:  4.08, eval_num_episodes:  40, train_num_episodes:  84, eval_frame_rate: 1573, train_frame_rate: 1103, train_exploration_epsilon: 0.100, train_state_value: 1.536, normalized_return: 0.744, capped_normalized_return: 0.744, human_gap: 0.256
+I1010 07:42:29.173971 23232157267776 run_atari.py:254] Training iteration 35.
+I1010 07:57:31.939884 23232157267776 run_atari.py:261] Evaluation iteration 35.
+I1010 08:02:50.745361 23232157267776 run_atari.py:289] iteration:  35, frame: 35000000, eval_episode_return:  11.15, train_episode_return:  4.92, eval_num_episodes:  47, train_num_episodes:  86, eval_frame_rate: 1568, train_frame_rate: 1108, train_exploration_epsilon: 0.100, train_state_value: 1.332, normalized_return: 0.902, capped_normalized_return: 0.902, human_gap: 0.098
+I1010 08:02:51.276478 23232157267776 run_atari.py:254] Training iteration 36.
+I1010 08:17:57.957824 23232157267776 run_atari.py:261] Evaluation iteration 36.
+I1010 08:23:18.032195 23232157267776 run_atari.py:289] iteration:  36, frame: 36000000, eval_episode_return:  12.88, train_episode_return:  5.53, eval_num_episodes:  48, train_num_episodes:  80, eval_frame_rate: 1562, train_frame_rate: 1103, train_exploration_epsilon: 0.100, train_state_value: 1.441, normalized_return: 0.951, capped_normalized_return: 0.951, human_gap: 0.049
+I1010 08:23:18.561459 23232157267776 run_atari.py:254] Training iteration 37.
+I1010 08:38:34.901500 23232157267776 run_atari.py:261] Evaluation iteration 37.
+I1010 08:43:53.442511 23232157267776 run_atari.py:289] iteration:  37, frame: 37000000, eval_episode_return:  12.19, train_episode_return:  6.23, eval_num_episodes:  43, train_num_episodes:  79, eval_frame_rate: 1570, train_frame_rate: 1091, train_exploration_epsilon: 0.100, train_state_value: 1.459, normalized_return: 0.932, capped_normalized_return: 0.932, human_gap: 0.068
+I1010 08:43:53.972023 23232157267776 run_atari.py:254] Training iteration 38.
+I1010 08:59:20.363489 23232157267776 run_atari.py:261] Evaluation iteration 38.
+I1010 09:04:49.703020 23232157267776 run_atari.py:289] iteration:  38, frame: 38000000, eval_episode_return:  11.40, train_episode_return:  5.99, eval_num_episodes:  42, train_num_episodes:  80, eval_frame_rate: 1518, train_frame_rate: 1079, train_exploration_epsilon: 0.100, train_state_value: 1.557, normalized_return: 0.909, capped_normalized_return: 0.909, human_gap: 0.091
+I1010 09:04:50.235980 23232157267776 run_atari.py:254] Training iteration 39.
+I1010 09:19:56.545896 23232157267776 run_atari.py:261] Evaluation iteration 39.
+I1010 09:25:14.348950 23232157267776 run_atari.py:289] iteration:  39, frame: 39000000, eval_episode_return:  9.08, train_episode_return:  5.04, eval_num_episodes:  37, train_num_episodes:  79, eval_frame_rate: 1573, train_frame_rate: 1103, train_exploration_epsilon: 0.100, train_state_value: 1.515, normalized_return: 0.844, capped_normalized_return: 0.844, human_gap: 0.156
+I1010 09:25:14.878620 23232157267776 run_atari.py:254] Training iteration 40.
+I1010 09:40:22.202658 23232157267776 run_atari.py:261] Evaluation iteration 40.

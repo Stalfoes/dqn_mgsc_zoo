@@ -1,0 +1,3 @@
+iteration,frame,eval_episode_return,train_episode_return,eval_num_episodes,train_num_episodes,eval_frame_rate,train_frame_rate,train_exploration_epsilon,train_state_value,normalized_return,capped_normalized_return,human_gap
+0,0,-21.0,nan,6,0,1524.6090605213135,nan,1.0,nan,-0.00849858356940512,-0.00849858356940512,1.0084985835694051
+1,20000,-21.0,-20.2,6,5,1578.6928925062318,1406.9402990295562,1.0,0.031633592588205764,-0.00849858356940512,-0.00849858356940512,1.0084985835694051

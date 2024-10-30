@@ -1,0 +1,216 @@
+created virtual environment CPython3.9.6.final.0-64 in 3977ms
+  creator CPython3Posix(dest=/localscratch/kapeluck.51741086.0/env, clear=False, global=False)
+  seeder FromAppData(download=False, pip=latest, setuptools=latest, wheel=latest, via=copy, app_data_dir=/home/kapeluck/.local/share/virtualenv/seed-app-data/v1.0.1)
+  activators BashActivator,CShellActivator,FishActivator,PowerShellActivator,PythonActivator,XonshActivator
+Ignoring pip: markers 'python_version < "3"' don't match your environment
+Looking in links: /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo2020/avx512, /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo/avx512, /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo2020/avx2, /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo/avx2, /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo2020/generic, /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo/generic, /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/pip-22.1.2+computecanada-py3-none-any.whl
+Installing collected packages: pip
+  Attempting uninstall: pip
+    Found existing installation: pip 20.0.2
+    Uninstalling pip-20.0.2:
+      Successfully uninstalled pip-20.0.2
+Successfully installed pip-22.1.2+computecanada
+Looking in links: /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo2020/avx512, /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo/avx512, /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo2020/avx2, /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo/avx2, /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo2020/generic, /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo/generic, /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo/generic/tensorflow-2.9.0+computecanada-cp39-cp39-linux_x86_64.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/flatbuffers-1.12+computecanada-py2.py3-none-any.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/packaging-24.1+computecanada-py3-none-any.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/gast-0.4.0+computecanada-py3-none-any.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/wrapt-1.16.0+computecanada-cp39-cp39-linux_x86_64.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo2020/generic/numpy-1.25.2+computecanada-cp39-cp39-linux_x86_64.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/tensorflow_io_gcs_filesystem-0.32.0+computecanada-cp39-cp39-linux_x86_64.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/libclang-14.0.1+computecanada-py2.py3-none-linux_x86_64.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/keras-2.9.0+computecanada-py2.py3-none-any.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/google_pasta-0.2.0+computecanada-py3-none-any.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/astunparse-1.6.3+computecanada-py2.py3-none-any.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/tensorboard-2.9.1+computecanada-py3-none-any.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/termcolor-2.4.0+computecanada-py3-none-any.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/absl_py-2.1.0+computecanada-py3-none-any.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/typing_extensions-4.12.2+computecanada-py3-none-any.whl
+Requirement already satisfied: setuptools in /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages (from tensorflow==2.9.0) (46.1.3)
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo/generic/grpcio-1.57.0+computecanada-cp39-cp39-linux_x86_64.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/Keras_Preprocessing-1.1.2+computecanada-py3-none-any.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/six-1.16.0+computecanada-py2.py3-none-any.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/tensorflow_estimator-2.9.0+computecanada-py2.py3-none-any.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo/avx2/protobuf-4.22.2+computecanada-cp39-cp39-linux_x86_64.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo/avx2/h5py-3.8.0+computecanada-cp39-cp39-linux_x86_64.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/opt_einsum-3.4.0+computecanada-py3-none-any.whl
+Requirement already satisfied: wheel<1.0,>=0.23.0 in /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages (from astunparse>=1.6.0->tensorflow==2.9.0) (0.34.2)
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/tensorboard_plugin_wit-1.8.1+computecanada-py3-none-any.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo/avx2/protobuf-3.19.4+computecanada-cp39-cp39-linux_x86_64.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/tensorboard_data_server-0.6.1+computecanada-py3-none-linux_x86_64.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/requests-2.31.0+computecanada-py3-none-any.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/werkzeug-3.0.4+computecanada-py3-none-any.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/google_auth_oauthlib-0.4.6+computecanada-py2.py3-none-any.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/google_auth-2.32.0+computecanada-py2.py3-none-any.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/Markdown-3.7+computecanada-py3-none-any.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/cachetools-5.5.0+computecanada-py3-none-any.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/pyasn1_modules-0.3.0+computecanada-py2.py3-none-any.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/rsa-4.9+computecanada-py3-none-any.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/requests_oauthlib-1.3.1+computecanada-py2.py3-none-any.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/importlib_metadata-7.0.1+computecanada-py3-none-any.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/idna-3.4+computecanada-py3-none-any.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/certifi-2024.2.2+computecanada-py3-none-any.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/charset_normalizer-3.2.0+computecanada-py3-none-any.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/urllib3-2.1.0+computecanada-py3-none-any.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/MarkupSafe-2.1.3+computecanada-cp39-cp39-linux_x86_64.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/zipp-3.17.0+computecanada-py3-none-any.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/pyasn1-0.5.1+computecanada-py2.py3-none-any.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/oauthlib-3.2.2+computecanada-py3-none-any.whl
+Installing collected packages: tensorboard-plugin-wit, libclang, keras, flatbuffers, zipp, wrapt, urllib3, typing-extensions, termcolor, tensorflow-io-gcs-filesystem, tensorflow-estimator, tensorboard-data-server, six, pyasn1, protobuf, packaging, opt-einsum, oauthlib, numpy, MarkupSafe, idna, grpcio, gast, charset-normalizer, certifi, cachetools, absl-py, werkzeug, rsa, requests, pyasn1-modules, keras-preprocessing, importlib-metadata, h5py, google-pasta, astunparse, requests-oauthlib, markdown, google-auth, google-auth-oauthlib, tensorboard, tensorflow
+Successfully installed MarkupSafe-2.1.3+computecanada absl-py-2.1.0+computecanada astunparse-1.6.3+computecanada cachetools-5.5.0+computecanada certifi-2024.2.2+computecanada charset-normalizer-3.2.0+computecanada flatbuffers-1.12+computecanada gast-0.4.0+computecanada google-auth-2.32.0+computecanada google-auth-oauthlib-0.4.6+computecanada google-pasta-0.2.0+computecanada grpcio-1.57.0+computecanada h5py-3.8.0+computecanada idna-3.4+computecanada importlib-metadata-7.0.1+computecanada keras-2.9.0+computecanada keras-preprocessing-1.1.2+computecanada libclang-14.0.1+computecanada markdown-3.7+computecanada numpy-1.25.2+computecanada oauthlib-3.2.2+computecanada opt-einsum-3.4.0+computecanada packaging-24.1+computecanada protobuf-3.19.4+computecanada pyasn1-0.5.1+computecanada pyasn1-modules-0.3.0+computecanada requests-2.31.0+computecanada requests-oauthlib-1.3.1+computecanada rsa-4.9+computecanada six-1.16.0+computecanada tensorboard-2.9.1+computecanada tensorboard-data-server-0.6.1+computecanada tensorboard-plugin-wit-1.8.1+computecanada tensorflow-2.9.0+computecanada tensorflow-estimator-2.9.0+computecanada tensorflow-io-gcs-filesystem-0.32.0+computecanada termcolor-2.4.0+computecanada typing-extensions-4.12.2+computecanada urllib3-2.1.0+computecanada werkzeug-3.0.4+computecanada wrapt-1.16.0+computecanada zipp-3.17.0+computecanada
+Looking in links: /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo2020/avx512, /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo/avx512, /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo2020/avx2, /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo/avx2, /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo2020/generic, /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo/generic, /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic
+Processing /home/kapeluck/python_snappy-0.6.1-cp39-cp39-linux_x86_64.whl
+Installing collected packages: python-snappy
+Successfully installed python-snappy-0.6.1
+Looking in links: /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo2020/avx512, /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo/avx512, /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo2020/avx2, /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo/avx2, /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo2020/generic, /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo/generic, /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic
+Processing /home/kapeluck/gym-0.19.0-py3-none-any.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/cloudpickle-1.6.0+computecanada-py3-none-any.whl
+Requirement already satisfied: numpy>=1.18.0 in /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages (from gym==0.19.0) (1.25.2+computecanada)
+Installing collected packages: cloudpickle, gym
+Successfully installed cloudpickle-1.6.0+computecanada gym-0.19.0
+Looking in links: /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo2020/avx512, /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo/avx512, /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo2020/avx2, /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo/avx2, /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo2020/generic, /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo/generic, /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic
+Processing /home/kapeluck/tensorflow_probability-0.17.0-py2.py3-none-any.whl
+Requirement already satisfied: absl-py in /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages (from tensorflow-probability==0.17.0) (2.1.0+computecanada)
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/decorator-5.1.1+computecanada-py3-none-any.whl
+Requirement already satisfied: cloudpickle>=1.3 in /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages (from tensorflow-probability==0.17.0) (1.6.0+computecanada)
+Requirement already satisfied: gast>=0.3.2 in /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages (from tensorflow-probability==0.17.0) (0.4.0+computecanada)
+Requirement already satisfied: six>=1.10.0 in /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages (from tensorflow-probability==0.17.0) (1.16.0+computecanada)
+Requirement already satisfied: numpy>=1.13.3 in /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages (from tensorflow-probability==0.17.0) (1.25.2+computecanada)
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/dm_tree-0.1.8+computecanada-cp39-cp39-linux_x86_64.whl
+Installing collected packages: dm-tree, decorator, tensorflow-probability
+Successfully installed decorator-5.1.1+computecanada dm-tree-0.1.8+computecanada tensorflow-probability-0.17.0
+Looking in links: /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo2020/avx512, /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo/avx512, /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo2020/avx2, /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo/avx2, /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo2020/generic, /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo/generic, /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/chex-0.1.3+computecanada-py3-none-any.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/distrax-0.1.2+computecanada-py3-none-any.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/dm_env-1.6+computecanada-py3-none-any.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/dm_haiku-0.0.6+computecanada-py3-none-any.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/dm_tree-0.1.7+computecanada-cp39-cp39-linux_x86_64.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/optax-0.1.2+computecanada-py3-none-any.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/rlax-0.1.5+computecanada-py3-none-any.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/jax-0.3.1+computecanada-py3-none-any.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo2020/generic/jaxlib-0.4.20+cuda11.cudnn86.computecanada-cp39-cp39-linux_x86_64.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/atari_py-0.2.9+computecanada-cp39-cp39-linux_x86_64.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/absl_py-1.1.0+computecanada-py3-none-any.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo/generic/numpy-1.21.4+computecanada-cp39-cp39-linux_x86_64.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo2020/avx2/Pillow-10.0.0+computecanada-cp39-cp39-linux_x86_64.whl
+Requirement already satisfied: cloudpickle==1.6.0 in /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages (from -r requirements_cc.txt (line 29)) (1.6.0+computecanada)
+Requirement already satisfied: decorator==5.1.1 in /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages (from -r requirements_cc.txt (line 30)) (5.1.1+computecanada)
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/flatbuffers-2.0+computecanada-py2.py3-none-any.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/gast-0.5.3+computecanada-py3-none-any.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/jmp-0.0.2+computecanada-py3-none-any.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/opt_einsum-3.3.0+computecanada-py3-none-any.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo/generic/scipy-1.8.0+computecanada-cp39-cp39-linux_x86_64.whl
+Requirement already satisfied: six==1.16.0 in /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages (from -r requirements_cc.txt (line 36)) (1.16.0+computecanada)
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/tabulate-0.8.10+computecanada-py3-none-any.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/toolz-0.11.2+computecanada-py3-none-any.whl
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic/typing_extensions-4.2.0+computecanada-py3-none-any.whl
+Requirement already satisfied: tensorflow-probability>=0.15.0 in /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages (from distrax==0.1.2->-r requirements_cc.txt (line 7)) (0.17.0)
+Processing /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo/generic/jaxlib-0.3.0+cuda11.cudnn82.computecanada-cp39-none-linux_x86_64.whl
+Installing collected packages: flatbuffers, dm-tree, typing_extensions, toolz, tabulate, Pillow, numpy, gast, absl-py, scipy, opt-einsum, jmp, dm-env, atari-py, jaxlib, dm-haiku, jax, chex, optax, distrax, rlax
+  Attempting uninstall: flatbuffers
+    Found existing installation: flatbuffers 1.12+computecanada
+    Uninstalling flatbuffers-1.12+computecanada:
+      Successfully uninstalled flatbuffers-1.12+computecanada
+  Attempting uninstall: dm-tree
+    Found existing installation: dm_tree 0.1.8+computecanada
+    Uninstalling dm_tree-0.1.8+computecanada:
+      Successfully uninstalled dm_tree-0.1.8+computecanada
+  Attempting uninstall: typing_extensions
+    Found existing installation: typing_extensions 4.12.2+computecanada
+    Uninstalling typing_extensions-4.12.2+computecanada:
+      Successfully uninstalled typing_extensions-4.12.2+computecanada
+  Attempting uninstall: numpy
+    Found existing installation: numpy 1.25.2+computecanada
+    Uninstalling numpy-1.25.2+computecanada:
+      Successfully uninstalled numpy-1.25.2+computecanada
+  Attempting uninstall: gast
+    Found existing installation: gast 0.4.0+computecanada
+    Uninstalling gast-0.4.0+computecanada:
+      Successfully uninstalled gast-0.4.0+computecanada
+  Attempting uninstall: absl-py
+    Found existing installation: absl_py 2.1.0+computecanada
+    Uninstalling absl_py-2.1.0+computecanada:
+      Successfully uninstalled absl_py-2.1.0+computecanada
+  Attempting uninstall: opt-einsum
+    Found existing installation: opt_einsum 3.4.0+computecanada
+    Uninstalling opt_einsum-3.4.0+computecanada:
+      Successfully uninstalled opt_einsum-3.4.0+computecanada
+Successfully installed Pillow-10.0.0+computecanada absl-py-1.1.0+computecanada atari-py-0.2.9+computecanada chex-0.1.3+computecanada distrax-0.1.2+computecanada dm-env-1.6+computecanada dm-haiku-0.0.6+computecanada dm-tree-0.1.7+computecanada flatbuffers-2.0+computecanada gast-0.5.3+computecanada jax-0.3.1+computecanada jaxlib-0.3.0+cuda11.cudnn82.computecanada jmp-0.0.2+computecanada numpy-1.21.4+computecanada opt-einsum-3.3.0+computecanada optax-0.1.2+computecanada rlax-0.1.5+computecanada scipy-1.8.0+computecanada tabulate-0.8.10+computecanada toolz-0.11.2+computecanada typing_extensions-4.2.0+computecanada
+copying assault.bin from atari_roms/assault.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/assault.bin
+copying hero.bin from atari_roms/hero.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/hero.bin
+copying fishing_derby.bin from atari_roms/fishing_derby.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/fishing_derby.bin
+copying private_eye.bin from atari_roms/private_eye.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/private_eye.bin
+copying enduro.bin from atari_roms/enduro.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/enduro.bin
+copying time_pilot.bin from atari_roms/time_pilot.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/time_pilot.bin
+copying solaris.bin from atari_roms/solaris.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/solaris.bin
+copying freeway.bin from atari_roms/freeway.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/freeway.bin
+copying crazy_climber.bin from atari_roms/crazy_climber.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/crazy_climber.bin
+copying alien.bin from atari_roms/alien.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/alien.bin
+copying gravitar.bin from atari_roms/gravitar.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/gravitar.bin
+copying journey_escape.bin from atari_roms/journey_escape.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/journey_escape.bin
+copying up_n_down.bin from atari_roms/up_n_down.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/up_n_down.bin
+copying wizard_of_wor.bin from atari_roms/wizard_of_wor.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/wizard_of_wor.bin
+copying tetris.bin from atari_roms/tetris.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/tetris.bin
+copying keystone_kapers.bin from atari_roms/keystone_kapers.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/keystone_kapers.bin
+copying montezuma_revenge.bin from atari_roms/montezuma_revenge.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/montezuma_revenge.bin
+copying koolaid.bin from atari_roms/koolaid.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/koolaid.bin
+copying atlantis.bin from atari_roms/atlantis.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/atlantis.bin
+copying kangaroo.bin from atari_roms/kangaroo.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/kangaroo.bin
+copying gopher.bin from atari_roms/gopher.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/gopher.bin
+copying trondead.bin from atari_roms/trondead.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/trondead.bin
+copying asteroids.bin from atari_roms/asteroids.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/asteroids.bin
+copying carnival.bin from atari_roms/carnival.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/carnival.bin
+copying double_dunk.bin from atari_roms/double_dunk.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/double_dunk.bin
+copying space_invaders.bin from atari_roms/space_invaders.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/space_invaders.bin
+copying galaxian.bin from atari_roms/galaxian.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/galaxian.bin
+copying qbert.bin from atari_roms/qbert.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/qbert.bin
+copying lost_luggage.bin from atari_roms/lost_luggage.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/lost_luggage.bin
+copying centipede.bin from atari_roms/centipede.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/centipede.bin
+copying robotank.bin from atari_roms/robotank.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/robotank.bin
+copying road_runner.bin from patched version of atari_roms/road_runner.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/road_runner.bin
+copying berzerk.bin from atari_roms/berzerk.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/berzerk.bin
+copying ms_pacman.bin from atari_roms/ms_pacman.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/ms_pacman.bin
+copying breakout.bin from atari_roms/breakout.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/breakout.bin
+copying elevator_action.bin from atari_roms/elevator_action.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/elevator_action.bin
+copying laser_gates.bin from atari_roms/laser_gates.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/laser_gates.bin
+copying seaquest.bin from atari_roms/seaquest.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/seaquest.bin
+copying sir_lancelot.bin from atari_roms/sir_lancelot.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/sir_lancelot.bin
+copying kaboom.bin from atari_roms/kaboom.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/kaboom.bin
+copying pooyan.bin from atari_roms/pooyan.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/pooyan.bin
+copying amidar.bin from atari_roms/amidar.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/amidar.bin
+copying pacman.bin from atari_roms/pacman.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/pacman.bin
+copying battle_zone.bin from atari_roms/battle_zone.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/battle_zone.bin
+copying bank_heist.bin from atari_roms/bank_heist.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/bank_heist.bin
+copying jamesbond.bin from atari_roms/jamesbond.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/jamesbond.bin
+copying venture.bin from atari_roms/venture.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/venture.bin
+copying video_pinball.bin from atari_roms/video_pinball.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/video_pinball.bin
+copying beam_rider.bin from atari_roms/beam_rider.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/beam_rider.bin
+copying mr_do.bin from atari_roms/mr_do.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/mr_do.bin
+copying frostbite.bin from atari_roms/frostbite.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/frostbite.bin
+copying boxing.bin from atari_roms/boxing.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/boxing.bin
+copying tennis.bin from atari_roms/tennis.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/tennis.bin
+copying tutankham.bin from atari_roms/tutankham.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/tutankham.bin
+copying adventure.bin from atari_roms/adventure.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/adventure.bin
+copying bowling.bin from atari_roms/bowling.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/bowling.bin
+copying defender.bin from atari_roms/defender.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/defender.bin
+copying demon_attack.bin from atari_roms/demon_attack.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/demon_attack.bin
+copying chopper_command.bin from atari_roms/chopper_command.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/chopper_command.bin
+copying riverraid.bin from atari_roms/riverraid.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/riverraid.bin
+copying pitfall.bin from atari_roms/pitfall.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/pitfall.bin
+copying donkey_kong.bin from atari_roms/donkey_kong.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/donkey_kong.bin
+copying frogger.bin from atari_roms/frogger.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/frogger.bin
+copying pong.bin from atari_roms/pong.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/pong.bin
+copying asterix.bin from atari_roms/asterix.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/asterix.bin
+copying surround.bin from atari_roms/surround.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/surround.bin
+copying yars_revenge.bin from atari_roms/yars_revenge.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/yars_revenge.bin
+copying phoenix.bin from atari_roms/phoenix.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/phoenix.bin
+copying ice_hockey.bin from atari_roms/ice_hockey.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/ice_hockey.bin
+copying skiing.bin from atari_roms/skiing.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/skiing.bin
+copying star_gunner.bin from atari_roms/star_gunner.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/star_gunner.bin
+copying king_kong.bin from atari_roms/king_kong.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/king_kong.bin
+copying krull.bin from atari_roms/krull.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/krull.bin
+copying kung_fu_master.bin from atari_roms/kung_fu_master.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/kung_fu_master.bin
+copying zaxxon.bin from atari_roms/zaxxon.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/zaxxon.bin
+copying air_raid.bin from atari_roms/air_raid.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/air_raid.bin
+copying name_this_game.bin from atari_roms/name_this_game.bin to /localscratch/kapeluck.51741086.0/env/lib/python3.9/site-packages/atari_py/atari_roms/name_this_game.bin
