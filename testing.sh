@@ -43,6 +43,7 @@ python -m atari_py.import_roms atari_roms
 
 
 # python -m dqn_zoo.dqn_mgsc.run_atari
+# python -m dqn_zoo.dqn_mgsc_batched.run_atari
 
 
 python -m dqn_zoo.dqn_mgsc.run_mgsc_test

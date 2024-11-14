@@ -56,6 +56,7 @@ class MGSCDqn(parts.Agent):
       grad_error_bound: float,
       rng_key: parts.PRNGKey,
       meta_optimizer: optax.GradientTransformation,
+      meta_batch_size: int
   ):
     self._preprocessor = preprocessor
     self._replay = replay
@@ -65,6 +66,7 @@ class MGSCDqn(parts.Agent):
     self._min_replay_capacity = min_replay_capacity_fraction * replay.capacity
     self._learn_period = learn_period
     self._target_network_update_period = target_network_update_period
+    self._meta_batch_size = meta_batch_size
 
     # Initialize network parameters and optimizer.
     self._rng_key, network_rng_key = jax.random.split(rng_key)
@@ -73,7 +75,7 @@ class MGSCDqn(parts.Agent):
     )
     self._target_params = self._online_params
     self._opt_state = optimizer.init(self._online_params)
-    self._meta_opt_state = meta_optimizer.init(jnp.zeros((replay.capacity,), dtype=jnp.float32)) # ERROR: logits here is [] but eventually grows, but the meta_opt_state is not set up for that kind of thing
+    self._meta_opt_state = meta_optimizer.init(jnp.zeros((self._meta_batch_size,), dtype=jnp.float32))
 
     # To help with the meta-gradient-learn step
     self._last_transitions = []
@@ -134,11 +136,9 @@ class MGSCDqn(parts.Agent):
     def meta_loss_fn(logits, transitions, online_params, target_params, online_transition, opt_state, rng_key):
       rng_key, exp_loss_key, target_loss_key = jax.random.split(rng_key, 3)
       online_transition = batch_single_transition(online_transition)
-      e_to_logits = jnp.power(jnp.e, logits)
-      probabilities = e_to_logits / jnp.sum(e_to_logits)
-      truncated_probabilities = probabilities[:len(transitions.s_tm1)]
+      probabilities = replay_lib.JNPprobabilities_from_logits(logits)
 
-      summed_weighted_grads = jax.grad(exp_loss_fn)(online_params, target_params, transitions, truncated_probabilities, exp_loss_key)
+      summed_weighted_grads = jax.grad(exp_loss_fn)(online_params, target_params, transitions, probabilities, exp_loss_key)
       updates, new_opt_state = optimizer.update(summed_weighted_grads, opt_state) # RMS Prop
       expected_online_params = optax.apply_updates(online_params, updates)
 
@@ -161,15 +161,14 @@ class MGSCDqn(parts.Agent):
       new_online_params = optax.apply_updates(online_params, updates)
       return rng_key, new_opt_state, new_online_params
 
-    def meta_update(rng_key, opt_state, meta_opt_state, online_params, target_params, transitions, logits, online_transition):
-      zero_padded_logits = jnp.array(logits + [0] * (replay.capacity - len(logits)), dtype=jnp.float32)
+    def meta_update(rng_key, opt_state, meta_opt_state, online_params, target_params, transitions, logits_list, online_transition):
+      logits = jnp.array(logits_list, dtype=jnp.float32)
       d_loss_d_meta_params = jax.grad(meta_loss_fn)(
-          zero_padded_logits, transitions, online_params, target_params, online_transition, opt_state, rng_key
+          logits, transitions, online_params, target_params, online_transition, opt_state, rng_key
       )
       meta_updates, new_meta_opt_state = meta_optimizer.update(d_loss_d_meta_params, meta_opt_state)
-      new_meta_params_zero_padded = optax.apply_updates(zero_padded_logits, meta_updates)
-      new_meta_params = list(new_meta_params_zero_padded[:len(logits)])
-      return rng_key, new_meta_opt_state, new_meta_params
+      new_meta_params = optax.apply_updates(logits, meta_updates)
+      return rng_key, new_meta_opt_state, list(new_meta_params)
 
     self._update = jax.jit(update)
     self._meta_update = jax.jit(meta_update)
@@ -202,8 +201,9 @@ class MGSCDqn(parts.Agent):
       self._last_transitions = self._last_transitions + transitions # this might just be a call-by-reference which makes the replay adding become NULL
 
     # Meta-prioritization learn step
-    if (self._frame_t % self._learn_period == 0) and (self._replay.size >= self._min_replay_capacity):
+    if (self._frame_t % self._learn_period == 0) and (self._replay.size >= max(self._meta_batch_size, self._min_replay_capacity)):
       if len(self._last_transitions) != 0:
+        print(f"Doing a meta-learning train step on frame={self._frame_t} ...")
         trans = self._last_transitions[-1] # TODO -- should we just be taking the most recent transition? maybe we can perform multiple updates?
         self._meta_prioritization_learn(trans)
         self._last_transitions.clear()
@@ -248,23 +248,7 @@ class MGSCDqn(parts.Agent):
   def _meta_prioritization_learn(self, online_transition) -> None:
     """Performs an expected update on the online parameters and updates the meta-parameters with the target."""
     logging.log_first_n(logging.INFO, 'Begin meta-prioritization learning', 1)
-    print("=======================\n", online_transition, "=======================")
-    def shape_of(thing):
-      if hasattr(thing, 'shape'):
-        return (thing.shape, thing.dtype)
-      elif hasattr(thing, '__len__'):
-        return ((len(thing),), type(thing[0]))
-      else:
-        return type(thing)
-    def pytree_structure(tree):
-      leaves, structure = jax.tree_util.tree_flatten(tree)
-      leaves = [shape_of(leaf) for leaf in leaves]
-      return jax.tree_util.tree_unflatten(structure, leaves)
-    print("=======================\n", type(online_transition)(*[shape_of(online_transition[i]) for i in range(len(online_transition))]),"=======================")
-    print("=======================\n", pytree_structure(self._opt_state),"=======================")
-    print("=======================\n", pytree_structure(self._meta_opt_state),"=======================")
-    quit()
-    transitions, logits = self._replay.transitions_and_logits()
+    ids, transitions, logits = self._replay.batch_of_ids_transitions_and_logits(self._meta_batch_size)
     self._rng_key, self._meta_opt_state, new_meta_params = self._meta_update(
         self._rng_key,
         self._opt_state,
@@ -273,8 +257,9 @@ class MGSCDqn(parts.Agent):
         self._target_params,
         transitions,
         logits,
-        online_transition)
-    self._replay._distribution._logits = new_meta_params
+        online_transition
+    )
+    self._replay.update_priorities(ids, new_meta_params)
 
   def _learn(self) -> None:
     """Samples a batch of transitions from replay and learns from it."""

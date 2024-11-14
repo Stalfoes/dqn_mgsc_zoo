@@ -19,11 +19,12 @@
 
 import collections
 import typing
-from typing import Any, Callable, Generic, Iterable, Mapping, Optional, Sequence, Tuple, TypeVar
+from typing import Any, Callable, Generic, Iterable, Mapping, Optional, Sequence, Tuple, TypeVar, Union
 
 import dm_env
 import numpy as np
 import snappy
+import jax.numpy as jnp
 
 from dqn_zoo import parts
 
@@ -39,6 +40,35 @@ class Transition(typing.NamedTuple):
   r_t: Optional[float]
   discount_t: Optional[float]
   s_t: Optional[np.ndarray]
+
+
+def probabilities_from_logits(logits: Union[list,tuple,np.ndarray]) -> np.ndarray:
+  """Calculate a list of probabilities from logits using the logsumexp trick to avoid under/overflow."""
+  if not isinstance(logits, np.ndarray):
+    logits = np.array(logits)
+  return np.exp(logits - logsumexp(logits))
+
+
+def logsumexp(x: Union[list,tuple,np.ndarray]) -> np.ndarray:
+  """Calculates a safe logsumexp operation using the logsumexp trick to avoid under/ovwerflow."""
+  if not isinstance(x, np.ndarray):
+    x = np.array(x)
+  c = x.max()
+  return c + np.log(np.sum(np.exp(x - c)))
+
+
+def JNPprobabilities_from_logits(logits: Union[list,tuple,np.ndarray,jnp.ndarray]) -> jnp.ndarray:
+  """Calculate a list of probabilities from logits using the logsumexp trick to avoid under/overflow."""
+  if not isinstance(logits, (np.ndarray, jnp.ndarray)):
+    logits = jnp.array(logits)
+  return jnp.exp(logits - JNPlogsumexp(logits))
+
+def JNPlogsumexp(x: Union[list,tuple,np.ndarray,jnp.ndarray]) -> jnp.ndarray:
+  """Calculates a safe logsumexp operation using the logsumexp trick to avoid under/ovwerflow."""
+  if not isinstance(x, (np.ndarray, jnp.ndarray)):
+    x = jnp.array(x)
+  c = x.max()
+  return c + jnp.log(jnp.sum(jnp.exp(x - c)))
 
 
 class UniformDistribution:
@@ -288,7 +318,6 @@ class ReservoirTransitionReplay(Generic[ReplayStructure]):
     if set(self._storage.keys()) != set(self._distribution.ids()):
       return False, 'IDs in storage and distribution do not match.'
     return self._distribution.check_valid()
-
 
 
 def _power(base, exponent) -> np.ndarray:
@@ -782,8 +811,7 @@ class MGSCDistribution:
 
   @property
   def probabilities(self) -> np.ndarray:
-    e = np.exp(self._logits)
-    return e / np.sum(e)
+    probabilities_from_logits(self._logits)
 
   def remove_priorities(self, ids: Sequence[int]) -> None:
     """Remove priorities associated with given IDs."""
@@ -803,13 +831,22 @@ class MGSCDistribution:
       self._logits[idx] = float(priority)
 
   def sample(self, size: int) -> np.ndarray:
-    """Returns sample of IDs with corresponding probabilities."""
+    """Returns sample of IDs."""
     if self.size == 0:
       raise RuntimeError('No IDs to sample.')
-    probs = self.probabilities
     # ids_in_order = [self._index_to_id[idx] for idx in range(len(self._logits))]
-    ids = self._random_state.choice(self.ids(), size=size, p=probs)
+    ids = self._random_state.choice(self.ids(), size=size, p=self.probabilities)
     return ids
+
+  def uniform_sample(self, size: int, replace:bool=True) -> np.ndarray:
+    """Returns uniform sample of IDs"""
+    if self.size == 0:
+      raise RuntimeError('No IDs to sample.')
+    ids = self._random_state.choice(self.ids(), size=size, replace=replace)
+    return ids
+
+  def get_priorities(self, ids: Sequence[int]) -> Sequence[float]:
+    return [self._logits[self._id_to_index[iden]] for iden in ids]
 
   def ids(self) -> Iterable[int]:
     """Returns an iterable of all current IDs."""
@@ -891,7 +928,11 @@ class MGSCFiFoTransitionReplay(Generic[ReplayStructure]):
     item_id = self._t
     
     # Choose the new logit value for the new item
-    new_logit = np.where(self._distribution.size == 0, 0, np.log(np.mean(np.exp(self._distribution._logits))))
+    # This is the mean probability of the list of probabilities, converted back to a logit value
+    #   we use the logsumexp trick to avoid potential under/overflow
+    new_logit = 0.0
+    if self._distribution.size > 0:
+      new_logit = logsumexp(self._distribution._logits) - np.log(self._distribution.size)
 
     self._distribution.add_priorities([item_id], [new_logit])
     self._storage[item_id] = self._encoder(item)
@@ -923,8 +964,27 @@ class MGSCFiFoTransitionReplay(Generic[ReplayStructure]):
     return self.stack_transitions(ids), probs
 
   def transitions_and_logits(self):
+    """Get the transitions and their associated logits."""
     ids, logits = self._distribution.ids_and_logits()
     return self.stack_transitions(ids), logits
+  
+  def batch_of_ids_transitions_and_logits(self, size: int) -> Tuple[Iterable[int], ReplayStructure, Sequence[float]]:
+    """Return a batch of transitions sampled uniformly (not according to the distribution) without replacement."""
+    ids = self._distribution.uniform_sample(size, replace=False)
+    transitions = self.stack_transitions(ids)
+    logits = self._distribution.get_priorities(ids)
+    return ids, transitions, logits
+
+  def slice_of_ids_transitions_and_logits(self, size: int):
+    """Meant to return slices of the array (like every 5th item) and its associated logits."""
+    num_slices = self.size // size
+    def slices():
+      pass
+    raise NotImplementedError("TODO")
+  
+  def update_priorities(self, ids:Sequence[int], priorities:Sequence[float]):
+    """Update the priorities of the associated IDs."""
+    self._distribution.update_priorities(ids, priorities)
 
   @property
   def size(self) -> int:

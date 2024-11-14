@@ -48,3 +48,5 @@ python -m dqn_zoo.dqn_mgsc.run_atari \
     --environment_name=jamesbond \
     --num_iterations=200 \
     --results_csv_path="/home/kapeluck/scratch/dqn_zoo_results/results/mgscdqn_200m/jamesbond/seed_${SLURM_ARRAY_TASK_ID}.csv"
+
+python -m dqn_zoo.dqn_mgsc.run_atari --seed=0 --environment_name=jamesbond --num_iterations=3 --num_train_frames=10000

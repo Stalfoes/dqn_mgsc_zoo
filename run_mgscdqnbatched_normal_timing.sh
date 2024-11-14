@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --job-name=mgscdqn_200m_timing_frames
-#SBATCH --output=/home/kapeluck/scratch/dqn_zoo_results/results/mgscdqn_200m_timing/mgscdqn_200m_timing_frames_%A_%a.out
-#SBATCH --error=/home/kapeluck/scratch/dqn_zoo_results/results/mgscdqn_200m_timing/mgscdqn_200m_timing_frames_%A_%a.err
+#SBATCH --job-name=mgscdqn_batched_200m_timing_frames
+#SBATCH --output=/home/kapeluck/scratch/dqn_zoo_results/results/mgscdqn_batched_200m_timing/mgscdqn_batched_200m_timing_frames_%A_%a.out
+#SBATCH --error=/home/kapeluck/scratch/dqn_zoo_results/results/mgscdqn_batched_200m_timing/mgscdqn_batched_200m_timing_frames_%A_%a.err
 #SBATCH --array=0-4
 #SBATCH --time=5:59:59
 #SBATCH --mem=25G
@@ -43,7 +43,9 @@ python -m atari_py.import_roms atari_roms
 
 
 # 1 iteration : 1M train frames
-python -m dqn_zoo.dqn_mgsc.run_atari \
+python -m dqn_zoo.dqn_mgsc_batched.run_atari \
     --seed="${SLURM_ARRAY_TASK_ID}" \
+    --environment_name=jamesbond \
     --num_iterations=5 \
-    --results_csv_path="/home/kapeluck/scratch/dqn_zoo_results/results/mgscdqn_200m_timing/seed_${SLURM_ARRAY_TASK_ID}.csv"
+    --meta_batch_size=5 \
+    --results_csv_path="/home/kapeluck/scratch/dqn_zoo_results/results/mgscdqn_batched_200m_timing/seed_${SLURM_ARRAY_TASK_ID}.csv"
