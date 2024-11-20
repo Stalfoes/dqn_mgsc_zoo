@@ -48,7 +48,6 @@ def probabilities_from_logits(logits: Union[list,tuple,np.ndarray]) -> np.ndarra
     logits = np.array(logits)
   return np.exp(logits - logsumexp(logits))
 
-
 def logsumexp(x: Union[list,tuple,np.ndarray]) -> np.ndarray:
   """Calculates a safe logsumexp operation using the logsumexp trick to avoid under/ovwerflow."""
   if not isinstance(x, np.ndarray):
@@ -59,14 +58,10 @@ def logsumexp(x: Union[list,tuple,np.ndarray]) -> np.ndarray:
 
 def JNPprobabilities_from_logits(logits: Union[list,tuple,np.ndarray,jnp.ndarray]) -> jnp.ndarray:
   """Calculate a list of probabilities from logits using the logsumexp trick to avoid under/overflow."""
-  if not isinstance(logits, (np.ndarray, jnp.ndarray)):
-    logits = jnp.array(logits)
   return jnp.exp(logits - JNPlogsumexp(logits))
 
 def JNPlogsumexp(x: Union[list,tuple,np.ndarray,jnp.ndarray]) -> jnp.ndarray:
   """Calculates a safe logsumexp operation using the logsumexp trick to avoid under/ovwerflow."""
-  if not isinstance(x, (np.ndarray, jnp.ndarray)):
-    x = jnp.array(x)
   c = x.max()
   return c + jnp.log(jnp.sum(jnp.exp(x - c)))
 

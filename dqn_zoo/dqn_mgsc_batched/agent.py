@@ -90,17 +90,15 @@ class MGSCDqn(parts.Agent):
     # and should not access the agent object's state via `self`.
 
     def norm_of_pytree(params, target_params):
-      chex.assert_trees_all_equal_shapes(params, target_params)
-      l2_norms = jax.tree_util.tree_map(lambda t, e: jnp.linalg.norm(t - e, ord=None) ** 2, target_params, params)
+      l2_norms = jax.tree_util.tree_map(lambda t, e: jnp.linalg.norm(t - e, ord=None) ** 2, target_params, params) # This is a for-loop!
       l2_norms_list, _ = jax.tree_util.tree_flatten(l2_norms)
       reduced = jnp.sum(jnp.array(l2_norms_list))
       return reduced
 
     def loss_fn_no_mean(online_params, target_params, transitions, rng_key):
       """Calculates loss given network parameters and transitions."""
-      chex.assert_trees_all_equal_shapes(online_params, target_params)
       _, online_key, target_key = jax.random.split(rng_key, 3)
-      q_tm1 = network.apply( # ValueError: 'sequential/sequential_1/linear/w' with retrieved shape (3136, 512) does not match shape=[448, 512] dtype=dtype('float32')
+      q_tm1 = network.apply(
           online_params, online_key, transitions.s_tm1
       ).q_values
       q_target_t = network.apply(
@@ -116,60 +114,66 @@ class MGSCDqn(parts.Agent):
       td_errors = rlax.clip_gradient(
           td_errors, -grad_error_bound, grad_error_bound
       ) # an array of floats of length `len(transitions.s_tm1)`
-      losses = rlax.l2_loss(td_errors) # # an array of floats of length `len(transitions.s_tm1)`. THIS IS JUST A SQUARE TIMES 1/2
+      losses = rlax.l2_loss(td_errors) # this is just squaring and multiplying by 2. This is is an array of floats of the length of transitions
       return losses
 
     def loss_fn(online_params, target_params, transitions, rng_key):
       losses = loss_fn_no_mean(online_params, target_params, transitions, rng_key)
-      loss = jnp.mean(losses) # should be just a single float
+      loss = jnp.mean(losses) # Take the mean of the array of floats
       return loss
     
     def exp_loss_fn(online_params, target_params, transitions, probabilities, rng_key):
       losses = loss_fn_no_mean(online_params, target_params, transitions, rng_key)
-      return jnp.dot(probabilities, losses)
+      return jnp.dot(probabilities, losses) # dot product the probabilities with the losses
 
-    def batch_single_transition(transition):
-      return type(transition)(*[
-          jnp.array(transition[i])[None, ...] for i in range(len(transition))
-      ])
+    def batch_single_transition(transition): # Is this an expensive operation?
+      return replay_lib.Transition(
+        s_tm1=jnp.asarray(transition.s_tm1)[None, ...],
+        a_tm1=jnp.asarray(transition.a_tm1)[None, ...],
+        r_t=jnp.asarray(transition.r_t)[None, ...],
+        discount_t=jnp.asarray(transition.discount_t)[None, ...],
+        s_t=jnp.asarray(transition.s_t)[None, ...]
+      )
 
     def meta_loss_fn(logits, transitions, online_params, target_params, online_transition, opt_state, rng_key):
-      rng_key, exp_loss_key, target_loss_key = jax.random.split(rng_key, 3)
-      online_transition = batch_single_transition(online_transition)
-      probabilities = replay_lib.JNPprobabilities_from_logits(logits)
+      rng_key, exp_loss_key, target_loss_key = jax.random.split(rng_key, 3) # likely not an issue
+      online_transition = batch_single_transition(online_transition) # 
+      probabilities = replay_lib.JNPprobabilities_from_logits(logits) # should not be an issue. Just math operations on an arrary
 
-      summed_weighted_grads = jax.grad(exp_loss_fn)(online_params, target_params, transitions, probabilities, exp_loss_key)
-      updates, new_opt_state = optimizer.update(summed_weighted_grads, opt_state) # RMS Prop
-      expected_online_params = optax.apply_updates(online_params, updates)
+      summed_weighted_grads = jax.grad(exp_loss_fn)(online_params, target_params, transitions, probabilities, exp_loss_key) # this seems to be expensive to compute the gradient here
+      updates, new_opt_state = optimizer.update(summed_weighted_grads, opt_state) # not normally in a loss function
+      expected_online_params = optax.apply_updates(online_params, updates) # this is a for-loop
 
-      d_loss_d_expected_params = jax.grad(loss_fn)(
+      d_loss_d_expected_params = jax.grad(loss_fn)( # this is also an expensive operation. The grad() call no, but the grad(loss)(...) is
           expected_online_params, online_params, online_transition, target_loss_key
       )
-      target_updates, new_opt_state = optimizer.update(d_loss_d_expected_params, new_opt_state) # RMS Prop
-      target_online_params = optax.apply_updates(expected_online_params, target_updates)
+      target_updates, new_opt_state = optimizer.update(d_loss_d_expected_params, new_opt_state) # not normally in a loss function
+      target_online_params = optax.apply_updates(expected_online_params, target_updates) # this is a for-loop
 
-      loss = norm_of_pytree(expected_online_params, target_online_params)
+      loss = norm_of_pytree(expected_online_params, target_online_params) # this contains a tree map so it's a for-loop
       return loss
 
     def update(rng_key, opt_state, online_params, target_params, transitions):
       """Computes learning update from batch of replay transitions."""
       rng_key, update_key = jax.random.split(rng_key)
-      d_loss_d_params = jax.grad(loss_fn)(
+      d_loss_d_params = jax.grad(loss_fn)( # calling the jax.grad(loss_fn)(...) is expensive
           online_params, target_params, transitions, update_key
       )
       updates, new_opt_state = optimizer.update(d_loss_d_params, opt_state)
-      new_online_params = optax.apply_updates(online_params, updates)
+      new_online_params = optax.apply_updates(online_params, updates) # is a for loop, but only over leaves of the parameters which is relatively short
       return rng_key, new_opt_state, new_online_params
 
     def meta_update(rng_key, opt_state, meta_opt_state, online_params, target_params, transitions, logits_list, online_transition):
-      logits = jnp.array(logits_list, dtype=jnp.float32)
+      logits = jnp.asarray(logits_list, dtype=jnp.float32) # maybe move this out of the jit?
       d_loss_d_meta_params = jax.grad(meta_loss_fn)(
           logits, transitions, online_params, target_params, online_transition, opt_state, rng_key
       )
       meta_updates, new_meta_opt_state = meta_optimizer.update(d_loss_d_meta_params, meta_opt_state)
-      new_meta_params = optax.apply_updates(logits, meta_updates)
-      return rng_key, new_meta_opt_state, list(new_meta_params)
+      new_meta_params = optax.apply_updates(logits, meta_updates) # this is a for-loop
+      return rng_key, new_meta_opt_state, list(new_meta_params) # return it as a list, unless the asarray call is moved out then move this too
 
+    self._unjitted_update = update # for testing
+    self._unjitted_meta_update = meta_update # for testing 
     self._update = jax.jit(update)
     self._meta_update = jax.jit(meta_update)
 
