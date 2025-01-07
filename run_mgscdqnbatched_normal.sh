@@ -1,9 +1,9 @@
 #!/bin/bash
-#SBATCH --job-name=testing
-#SBATCH --output=out/testing_%A_%a.out
-#SBATCH --error=err/testing_%A_%a.err
-#SBATCH --array=0-0
-#SBATCH --time=11:59:59
+#SBATCH --job-name=mgscdqn_batched_100m_metasize_100
+#SBATCH --output=/home/kapeluck/scratch/dqn_zoo_results/results/mgscdqn_batched_100m/metasize_100/mgscdqn_batched_100m_metasize_100_%A_%a.out
+#SBATCH --error=/home/kapeluck/scratch/dqn_zoo_results/results/mgscdqn_batched_100m/metasize_100/mgscdqn_batched_100m_metasize_100_%A_%a.err
+#SBATCH --array=0-4
+#SBATCH --time=167:59:59
 #SBATCH --mem=25G
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=2
@@ -31,7 +31,7 @@ module load snappy
 virtualenv --no-download $SLURM_TMPDIR/env
 source $SLURM_TMPDIR/env/bin/activate
 pip install --no-index --upgrade pip==22.1.2
-pip install --no-index tensorflow==2.9.0 # necessary for tensorflow-probability import
+pip install --no-index tensorflow==2.9.0
 # pip wheel python-snappy==0.6.1
 # pip wheel gym==0.19.0
 # pip wheel tensorflow-probability==0.17.0
@@ -42,32 +42,10 @@ pip install --no-index -r requirements_cc.txt
 python -m atari_py.import_roms atari_roms
 
 
-# pip install --no-index graphviz # for jaxpr viewing
-# python -m dqn_zoo.dqn_mgsc_batched.jaxpr_viewing_atari --meta_batch_size=10
-# python -m dqn_zoo.dqn_mgsc_batched.run_circular_replay_test
-# python -m dqn_zoo.dqn_mgsc_batched.find_times_per_batch_size
-
-# python -m dqn_zoo.dqn_mgsc_batched_profiling.timing_atari --meta_batch_size=10
-
-# python -m dqn_zoo.dqn_mgsc.run_atari
-# python -m dqn_zoo.dqn_mgsc_batched.run_atari
-
-# pip install --no-index matplotlib
-# python simple_plots.py
-
-
-python -m dqn_zoo.dqn_mgsc.run_mgsc_test
-python -m dqn_zoo.dqn_mgsc.run_mgsc_atari_test
-
-python -m dqn_zoo.gym_atari_test # OK
-python -m dqn_zoo.networks_test
-python -m dqn_zoo.parts_test # OK
-python -m dqn_zoo.replay_test # OK
-python -m dqn_zoo.c51.run_atari_test # OK
-python -m dqn_zoo.double_q.run_atari_test # OK
-python -m dqn_zoo.dqn.run_atari_test # OK
-python -m dqn_zoo.iqn.run_atari_test
-python -m dqn_zoo.prioritized.run_atari_test
-python -m dqn_zoo.qrdqn.run_atari_test
-python -m dqn_zoo.rainbow.run_atari_test
-python -m dqn_zoo.dqn_mgsc.run_mgsc_test
+# 1 iteration : 1M train frames
+python -m dqn_zoo.dqn_mgsc_batched.run_atari \
+    --seed="${SLURM_ARRAY_TASK_ID}" \
+    --environment_name=jamesbond \
+    --num_iterations=100 \
+    --meta_batch_size=100 \
+    --results_csv_path="/home/kapeluck/scratch/dqn_zoo_results/results/mgscdqn_batched_100m/metasize_100/seed_${SLURM_ARRAY_TASK_ID}.csv"

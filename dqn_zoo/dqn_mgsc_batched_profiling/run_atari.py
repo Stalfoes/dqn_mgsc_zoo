@@ -21,6 +21,10 @@ http://www.nature.com/articles/nature14236.
 
 # pylint: disable=g-bad-import-order
 
+
+from time import time
+
+
 import collections
 import itertools
 import sys
@@ -40,11 +44,10 @@ import optax
 from dqn_zoo import atari_data
 from dqn_zoo import gym_atari
 from dqn_zoo import networks
-# from dqn_zoo import parts
-from dqn_zoo import parts_new as parts # For testing checkpointing!
+from dqn_zoo import parts
 from dqn_zoo import processors
 from dqn_zoo import replay as replay_lib
-from dqn_zoo.dqn import agent
+from dqn_zoo.dqn_mgsc_batched import agent
 
 # Relevant flag values are expressed in terms of environment frames.
 FLAGS = flags.FLAGS
@@ -94,22 +97,22 @@ _LEARN_PERIOD = flags.DEFINE_integer('learn_period', 16, '')
 _RESULTS_CSV_PATH = flags.DEFINE_string(
     'results_csv_path', './tmp/results.csv', ''
 )
+_META_LEARNING_RATE = flags.DEFINE_float('meta_learning_rate', 0.00025, '')
+_META_BATCH_SIZE = flags.DEFINE_integer('meta_batch_size', int(1e5), '')
 
 
 def main(argv):
   """Trains DQN agent on Atari."""
   del argv
-  logging.info('DQN on Atari on %s.', jax.lib.xla_bridge.get_backend().platform)
+  logging.info('DQN with MGSC with batches of size=%d on Atari on %s.', _META_BATCH_SIZE.value, jax.lib.xla_bridge.get_backend().platform)
   random_state = np.random.RandomState(_SEED.value)
   rng_key = jax.random.PRNGKey(
       random_state.randint(-sys.maxsize - 1, sys.maxsize + 1, dtype=np.int64)
   )
 
   if _RESULTS_CSV_PATH.value:
-    logging.info(f'Saving results to {_RESULTS_CSV_PATH.value}')
     writer = parts.CsvWriter(_RESULTS_CSV_PATH.value)
   else:
-    logging.info(f'No save directory specified!')
     writer = parts.NullWriter()
 
   def environment_builder():
@@ -201,7 +204,7 @@ def main(argv):
       s_t=None,
   )
 
-  replay = replay_lib.TransitionReplay(
+  replay = replay_lib.MGSCFiFoTransitionReplay( # CHANGED
       _REPLAY_CAPACITY.value, replay_structure, random_state, encoder, decoder
   )
 
@@ -214,7 +217,7 @@ def main(argv):
 
   train_rng_key, eval_rng_key = jax.random.split(rng_key)
 
-  train_agent = agent.Dqn(
+  train_agent = agent.MGSCDqn(
       preprocessor=preprocessor_builder(),
       sample_network_input=sample_network_input,
       network=network,
@@ -228,6 +231,10 @@ def main(argv):
       target_network_update_period=_TARGET_NETWORK_UPDATE_PERIOD.value,
       grad_error_bound=_GRAD_ERROR_BOUND.value,
       rng_key=train_rng_key,
+      meta_optimizer=optax.adam(
+        learning_rate = _META_LEARNING_RATE.value
+      ),
+      meta_batch_size=_META_BATCH_SIZE.value
   )
   eval_agent = parts.EpsilonGreedyActor(
       preprocessor=preprocessor_builder(),
@@ -237,8 +244,7 @@ def main(argv):
   )
 
   # Set up checkpointing.
-#   checkpoint = parts.NullCheckpoint() # does not work and does nothing -- TODO
-  checkpoint = parts.Checkpoint() # For testing checkpointing
+  checkpoint = parts.NullCheckpoint()
 
   state = checkpoint.state
   state.iteration = 0
@@ -249,6 +255,7 @@ def main(argv):
   if checkpoint.can_be_restored():
     checkpoint.restore()
 
+  start_time = time()
   while state.iteration <= _NUM_ITERATIONS.value:
     # New environment for each iteration to allow for determinism if preempted.
     env = environment_builder()
@@ -293,6 +300,8 @@ def main(argv):
     state.iteration += 1
     checkpoint.save()
 
+  end_time = time()
+  print(f"TIME = {end_time - start_time} seconds")
   writer.close()
 
 

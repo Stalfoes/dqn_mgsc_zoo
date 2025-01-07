@@ -33,7 +33,7 @@ import time
 
 from dqn_zoo import parts
 from dqn_zoo import processors
-from dqn_zoo import replay_circular as replay_lib
+from dqn_zoo import replay_not_lists_timing_versions as replay_lib
 
 # Batch variant of q_learning.
 _batch_q_learning = jax.vmap(rlax.q_learning)
@@ -79,16 +79,6 @@ class MGSCDqn(parts.Agent):
     self._opt_state = optimizer.init(self._online_params)
     self._meta_opt_state = meta_optimizer.init(jnp.zeros((self._meta_batch_size,), dtype=jnp.float32))
 
-    # debugging help
-    # self._debugging_num_meta_update_calls = 0
-    # self.times = {'meta-update': {'total_time': 0, 'num_calls': 0},
-    #               'update': {'total_time': 0, 'num_calls': 0},
-    #               'replay-sample-meta-batch': {'total_time': 0, 'num_calls': 0},
-    #               'replay-sample-batch': {'total_time': 0, 'num_calls': 0},
-    #               'replay-add': {'total_time': 0, 'num_calls': 0},
-    #               'replay-update': {'total_time': 0, 'num_calls': 0}
-    #              }
-
     # To help with the meta-gradient-learn step
     self._last_transitions = []
 
@@ -102,11 +92,9 @@ class MGSCDqn(parts.Agent):
     # and should not access the agent object's state via `self`.
 
     def norm_of_pytree(params, target_params):
-      # l2_norms = jax.tree_util.tree_map(lambda t, e: jnp.linalg.norm(t - e, ord=None) ** 2, target_params, params) # This is a for-loop!
-      # l2_norms_list, _ = jax.tree_util.tree_flatten(l2_norms)
-      # reduced = jnp.sum(jnp.array(l2_norms_list))
-      squared_difference = jax.tree_util.tree_map(lambda p, t: jnp.sum((p - t) ** 2), params, target_params)
-      reduced = jax.tree_util.tree_reduce(lambda a, b: a + b, squared_difference) # just calls reduce on the leaves
+      l2_norms = jax.tree_util.tree_map(lambda t, e: jnp.linalg.norm(t - e, ord=None) ** 2, target_params, params) # This is a for-loop!
+      l2_norms_list, _ = jax.tree_util.tree_flatten(l2_norms)
+      reduced = jnp.sum(jnp.array(l2_norms_list))
       return reduced
 
     def loss_fn_no_mean(online_params, target_params, transitions, rng_key):
@@ -136,9 +124,9 @@ class MGSCDqn(parts.Agent):
       loss = jnp.mean(losses) # Take the mean of the array of floats
       return loss
     
-    # def exp_loss_fn(online_params, target_params, transitions, probabilities, rng_key):
-    #   losses = loss_fn_no_mean(online_params, target_params, transitions, rng_key)
-    #   return jnp.dot(probabilities, losses) # dot product the probabilities with the losses
+    def exp_loss_fn(online_params, target_params, transitions, probabilities, rng_key):
+      losses = loss_fn_no_mean(online_params, target_params, transitions, rng_key)
+      return jnp.dot(probabilities, losses) # dot product the probabilities with the losses
 
     def batch_single_transition(transition): # Is this an expensive operation?
       return replay_lib.Transition(
@@ -158,44 +146,70 @@ class MGSCDqn(parts.Agent):
       return weighted_grad
 
     def meta_loss_fn(logits, transitions, online_params, target_params, online_transition, opt_state, rng_key):
-      rng_key, exp_loss_key, target_loss_key = jax.random.split(rng_key, 3)
-      
-      online_transition = batch_single_transition(online_transition)
-      
-      probabilities = replay_lib.JNPprobabilities_from_logits(logits)
-
-      # jax.debug.print("\tcomputed the probabilities to be {}", probabilities)
-      
-      # chex.assert_tree_all_finite(probabilities)
-
+      times = {
+        'splitting_keys': None,
+        'batch_online_transition': None,
+        'calculating_probabilities': None,
+        'calculating_vmap': None,
+        'calculating_sum_of_weighted_gradients': None,
+        'calculating_target_parameters': None,
+        'calculating_opt_updates': 0,
+        'applying_updates': 0,
+        'calculating_norm': None,
+      }
+      s = time.time()
+      rng_key, exp_loss_key, target_loss_key = jax.random.split(rng_key, 3) # likely not an issue
+      e = time.time()
+      times['splitting_keys'] = e - s
+      s = time.time()
+      online_transition = batch_single_transition(online_transition) # 
+      e = time.time()
+      times['batch_online_transition'] = e - s
+      s = time.time()
+      probabilities = replay_lib.JNPprobabilities_from_logits(logits) # should not be an issue. Just math operations on an arrary
+      e = time.time()
+      times['calculating_probabilities'] = e - s
+      s = time.time()
       weighted_gradients = jax.vmap(weighted_grads, (None,None,0,0,None))(online_params, target_params, transitions, probabilities, exp_loss_key)
+      e = time.time()
+      times['calculating_vmap'] = e - s
+      s = time.time()
       summed_weighted_grads = jax.tree_util.tree_map(lambda g: jnp.sum(g, axis=0), weighted_gradients)
-      
-      # chex.assert_tree_all_finite(summed_weighted_grads)
-
       # summed_weighted_grads = jnp.dot(probabilities, gradients) # maybe this can be a vmap of multiplication against the pytree gradients
       # summed_weighted_grads = jax.grad(exp_loss_fn)(online_params, target_params, transitions, probabilities, exp_loss_key) # this seems to be expensive to compute the gradient here
-      updates, new_opt_state = optimizer.update(summed_weighted_grads, opt_state)
-      expected_online_params = optax.apply_updates(online_params, updates)
+      e = time.time()
+      times['calculating_sum_of_weighted_gradients'] = e - s
 
-      # chex.assert_tree_all_finite(expected_online_params)
+      # summed_weighted_grads = jax.grad(exp_loss_fn)(online_params, target_params, transitions, probabilities, exp_loss_key) # this seems to be expensive to compute the gradient here
+      s = time.time()
+      updates, new_opt_state = optimizer.update(summed_weighted_grads, opt_state) # not normally in a loss function
+      e = time.time()
+      times['calculating_opt_updates'] += e - s
+      s = time.time()
+      expected_online_params = optax.apply_updates(online_params, updates) # this is a for-loop
+      e = time.time()
+      times['applying_updates'] += e - s
 
-      gradients_of_expected_params = jax.grad(loss_fn)(
+      s = time.time()
+      d_loss_d_expected_params = jax.grad(loss_fn)( # this is also an expensive operation. The grad() call no, but the grad(loss)(...) is
           expected_online_params, online_params, online_transition, target_loss_key
       )
-      # chex.assert_tree_all_finite(d_loss_d_expected_params)
+      e = time.time()
+      times['calculating_target_parameters'] = e - s
+      s = time.time()
+      target_updates, new_opt_state = optimizer.update(d_loss_d_expected_params, new_opt_state) # not normally in a loss function
+      e = time.time()
+      times['calculating_opt_updates'] += e - s
+      s = time.time()
+      target_online_params = optax.apply_updates(expected_online_params, target_updates) # this is a for-loop
+      e = time.time()
+      times['applying_updates'] += e - s
 
-      # It's possible that since RMS is prop is too high-order of an optimizer, Adam going over that leads to instability
-      target_updates, new_opt_state = optimizer.update(gradients_of_expected_params, new_opt_state)
-      target_online_params = optax.apply_updates(expected_online_params, target_updates)
-
-      # chex.assert_tree_all_finite(target_online_params)
-
-      loss = norm_of_pytree(expected_online_params, target_online_params)
-      # jax.debug.print("\tcomputed the loss to be {}", loss)
-      # jax.debug.print("completed forward pass of meta_loss_fn")
-      # chex.assert_tree_all_finite(loss)
-      return loss
+      s = time.time()
+      loss = norm_of_pytree(expected_online_params, target_online_params) # this contains a tree map so it's a for-loop
+      e = time.time()
+      times['calculating_norm'] = e - s
+      return loss#, times
 
     def update(rng_key, opt_state, online_params, target_params, transitions):
       """Computes learning update from batch of replay transitions."""
@@ -207,17 +221,39 @@ class MGSCDqn(parts.Agent):
       new_online_params = optax.apply_updates(online_params, updates) # is a for loop, but only over leaves of the parameters which is relatively short
       return rng_key, new_opt_state, new_online_params
 
-    def meta_update(rng_key, opt_state, meta_opt_state, online_params, target_params, transitions, logits, online_transition):
-      # logits = jnp.asarray(logits_list, dtype=jnp.float32) # is this necessary to do since it's a numpy array?
-      # jax.debug.print("starting grad call of meta_loss_fn ...")
-      gradients_of_meta_params = jax.grad(meta_loss_fn)(
+    def meta_update(rng_key, opt_state, meta_opt_state, online_params, target_params, transitions, logits_list, online_transition):
+      all_times = {
+        'convert_to_jnp': None,
+        'calculating_opt_updates': 0,
+        'applying_updates': 0,
+        'calculating_grad': None,
+      }
+      s = time.time()
+      logits = jnp.asarray(logits_list, dtype=jnp.float32) # this now just converts from a numpy array to a jnp array. Slow?
+      e = time.time()
+      all_times['convert_to_jnp'] = e - s
+      s = time.time()
+      d_loss_d_meta_params = jax.grad(meta_loss_fn)(
           logits, transitions, online_params, target_params, online_transition, opt_state, rng_key
       )
-      # chex.assert_tree_all_finite(d_loss_d_meta_params)
-      meta_params_updates, new_meta_opt_state = meta_optimizer.update(gradients_of_meta_params, meta_opt_state)
-      new_meta_params = optax.apply_updates(logits, meta_params_updates)
-      return rng_key, new_meta_opt_state, new_meta_params
+      e = time.time()
+      all_times['calculating_grad'] = e - s
+      # d_loss_d_meta_params, times = meta_loss_fn(
+      #     logits, transitions, online_params, target_params, online_transition, opt_state, rng_key
+      # )
+      # all_times.update(times)
+      s = time.time()
+      meta_updates, new_meta_opt_state = meta_optimizer.update(d_loss_d_meta_params, meta_opt_state)
+      e = time.time()
+      all_times['calculating_opt_updates'] += e - s
+      s = time.time()
+      new_meta_params = optax.apply_updates(logits, meta_updates) # this is a for-loop
+      e = time.time()
+      all_times['applying_updates'] += e - s
+      return rng_key, new_meta_opt_state, new_meta_params, all_times # return it as a list, unless the asarray call is moved out then move this too
 
+    self._unjitted_update = update # for testing
+    self._unjitted_meta_update = meta_update # for testing 
     self._update = jax.jit(update)
     self._meta_update = jax.jit(meta_update)
 
@@ -251,7 +287,7 @@ class MGSCDqn(parts.Agent):
     # Meta-prioritization learn step
     if (self._frame_t % self._learn_period == 0) and (self._replay.size >= max(self._meta_batch_size, self._min_replay_capacity)):
       if len(self._last_transitions) != 0:
-        # print(f"Doing a meta-learning train step on frame={self._frame_t} ...")
+        print(f"Doing a meta-learning train step on frame={self._frame_t} ...")
         trans = self._last_transitions[-1] # TODO -- should we just be taking the most recent transition? maybe we can perform multiple updates?
         self._meta_prioritization_learn(trans)
         self._last_transitions.clear()
@@ -260,12 +296,7 @@ class MGSCDqn(parts.Agent):
     if not (timestep is None):
       # Add states to replay buffer
       for transition in transitions:
-        # s = time.time()
         self._replay.add(transition)
-        # e = time.time()
-        # self.times['replay-add']['total_time'] += e - s
-        # self.times['replay-add']['num_calls'] += 1
-
 
     if self._replay.size < self._min_replay_capacity:
       return action
@@ -302,15 +333,13 @@ class MGSCDqn(parts.Agent):
     """Performs an expected update on the online parameters and updates the meta-parameters with the target."""
     logging.log_first_n(logging.INFO, 'Begin meta-prioritization learning', 1)
     # Draw a meta batch
-    # s = time.time()
-    indices, transitions, logits = self._replay.batch_of_ids_transitions_and_logits(self._meta_batch_size)
-    # e = time.time()
-    # self.times['replay-sample-meta-batch']['total_time'] += e - s
-    # self.times['replay-sample-meta-batch']['num_calls'] += 1
-
+    all_times = {}
+    s = time.time()
+    ids, transitions, logits = self._replay.batch_of_ids_transitions_and_logits(self._meta_batch_size) # <-- take a look into this
+    e = time.time()
+    all_times['getting_batch'] = e - s
     # Perform an update
-    # s = time.time()
-    self._rng_key, self._meta_opt_state, new_meta_params = self._meta_update(
+    self._rng_key, self._meta_opt_state, new_meta_params, times = self._meta_update(
         self._rng_key,
         self._opt_state,
         self._meta_opt_state,
@@ -320,33 +349,17 @@ class MGSCDqn(parts.Agent):
         logits,
         online_transition
     )
-    # e = time.time()
-    # self.times['meta-update']['total_time'] += e - s
-    # self.times['meta-update']['num_calls'] += 1
-
-    # if self._debugging_num_meta_update_calls % 75 == 0:
-      # print(f"Logits on update={self._debugging_num_meta_update_calls}: {new_meta_params=}, {len(new_meta_params)=}, {self._replay._distribution._logits.min()=}, {self._replay._distribution._logits.mean()=}, {self._replay._distribution._logits.max()=}")
-    # if jnp.isnan(new_meta_params).any():
-      # raise ValueError(f"New batched logits contain a NaN. Occurs on update_number={self._debugging_num_meta_update_calls} {new_meta_params=}, {len(new_meta_params)=}, {np.isnan(new_meta_params).any()=}")
-    
-    # s = time.time()
-    self._replay.update_priorities(indices, new_meta_params) # these are nan's sometimes!
-    # e = time.time()
-    # self.times['replay-update']['total_time'] += e - s
-    # self.times['replay-update']['num_calls'] += 1
-    
-    # self._debugging_num_meta_update_calls += 1
+    all_times.update(times)
+    s = time.time()
+    self._replay.update_priorities(ids, new_meta_params) # <-- take a look into this
+    e = time.time()
+    all_times['updating_priorities'] = e - s
+    return all_times
 
   def _learn(self) -> None:
     """Samples a batch of transitions from replay and learns from it."""
     logging.log_first_n(logging.INFO, 'Begin learning', 1)
-    # s = time.time()
     transitions = self._replay.sample(self._batch_size)
-    # e = time.time()
-    # self.times['replay-sample-batch']['total_time'] += e - s
-    # self.times['replay-sample-batch']['num_calls'] += 1
-    
-    # s = time.time()
     self._rng_key, self._opt_state, self._online_params = self._update(
         self._rng_key,
         self._opt_state,
@@ -354,9 +367,6 @@ class MGSCDqn(parts.Agent):
         self._target_params,
         transitions,
     )
-    # e = time.time()
-    # self.times['update']['total_time'] += e - s
-    # self.times['update']['num_calls'] += 1
 
   @property
   def online_params(self) -> parts.NetworkParams:
@@ -386,8 +396,6 @@ class MGSCDqn(parts.Agent):
         'online_params': self._online_params,
         'target_params': self._target_params,
         'replay': self._replay.get_state(),
-        'meta_opt_state': self._meta_opt_state,
-
     }
     return state
 
@@ -399,4 +407,3 @@ class MGSCDqn(parts.Agent):
     self._online_params = jax.device_put(state['online_params'])
     self._target_params = jax.device_put(state['target_params'])
     self._replay.set_state(state['replay'])
-    self._meta_opt_state = state['meta_opt_state']

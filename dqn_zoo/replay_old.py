@@ -24,8 +24,6 @@ from typing import Any, Callable, Generic, Iterable, Mapping, Optional, Sequence
 import dm_env
 import numpy as np
 import snappy
-
-import jax
 import jax.numpy as jnp
 
 from dqn_zoo import parts
@@ -44,32 +42,16 @@ class Transition(typing.NamedTuple):
   s_t: Optional[np.ndarray]
 
 
-# DEBUGGING operations
-def check_valid_pytree(pytree) -> None:
-  leaves, _ = jax.tree_util.tree_flatten(pytree)
-  for leaf in leaves:
-    check_valid_array(leaf)
-
-def check_valid_array(arr: np.ndarray) -> None:
-  if jnp.isnan(arr).any():
-    raise ValueError(f"Array contains a NaN. {arr=}, {arr.shape=}, {np.isnan(arr).any()=}, {(arr == np.inf).any()=}, {(arr == -np.inf).any()=}, {arr.max()=}, {arr.min()=}")
-  if not jnp.isfinite(arr).all():
-    raise ValueError(f"Array contains not-finite values. {arr=}, {arr.shape=}, {np.isnan(arr).any()=}, {(arr == np.inf).any()=}, {(arr == -np.inf).any()=}, {arr.max()=}, {arr.min()=}")
-
-def check_valid_value(value) -> None:
-  if jnp.isnan(value):
-    raise ValueError(f"Value is a NaN. {value=}, {np.isnan(value)=}, {(value == np.inf)=}, {(value == -np.inf)=}")
-  if not jnp.isfinite(value):
-    raise ValueError(f"Value is not finite. {value=}, {np.isnan(value)=}, {(value == np.inf)=}, {(value == -np.inf)=}")
-
-
-# PROBABILITY CALCULATING OPERATIONS
-def probabilities_from_logits(logits: np.ndarray) -> np.ndarray:
+def probabilities_from_logits(logits: Union[list,tuple,np.ndarray]) -> np.ndarray:
   """Calculate a list of probabilities from logits using the logsumexp trick to avoid under/overflow."""
+  if not isinstance(logits, np.ndarray):
+    logits = np.array(logits)
   return np.exp(logits - logsumexp(logits))
 
-def logsumexp(x: np.ndarray) -> np.ndarray:
-  """Calculates a safe logsumexp operation using the logsumexp trick to avoid under/overflow."""
+def logsumexp(x: Union[list,tuple,np.ndarray]) -> np.ndarray:
+  """Calculates a safe logsumexp operation using the logsumexp trick to avoid under/ovwerflow."""
+  if not isinstance(x, np.ndarray):
+    x = np.array(x)
   c = x.max()
   return c + np.log(np.sum(np.exp(x - c)))
 
@@ -79,9 +61,9 @@ def JNPprobabilities_from_logits(logits: jnp.ndarray) -> jnp.ndarray:
   return jnp.exp(logits - JNPlogsumexp(logits))
 
 def JNPlogsumexp(x: jnp.ndarray) -> jnp.ndarray:
-  """Calculates a safe logsumexp operation using the logsumexp trick to avoid under/overflow."""
-  c = x.max()
-  return c + jnp.log(jnp.sum(jnp.exp(x - c))) # generally the expensive operation of the two
+  """Calculates a safe logsumexp operation using the logsumexp trick to avoid under/ovwerflow."""
+  c = x.max() # expensive operation?
+  return c + jnp.log(jnp.sum(jnp.exp(x - c)))
 
 
 class UniformDistribution:
@@ -346,7 +328,7 @@ def importance_sampling_weights(
     uniform_probability: float,
     exponent: float,
     normalize: bool,
-  ) -> np.ndarray:
+) -> np.ndarray:
   """Calculates importance sampling weights from given sampling probabilities.
 
   Args:
@@ -798,7 +780,7 @@ class MGSCDistribution:
     if min_capacity < 0:
       raise ValueError('Require min_capacity >= 0.')
     self._max_capacity = max_capacity
-    self._logits:np.ndarray = np.array((), dtype=np.float32)
+    self._logits:list[float] = []
     self._random_state = random_state
     self._id_to_index = {}  # User ID -> probabilities index.
     self._index_to_id = {}  # Probabilities index -> user ID.
@@ -820,11 +802,11 @@ class MGSCDistribution:
     for id, priority in zip(ids, priorities):
       self._id_to_index[id] = len(self._logits)
       self._index_to_id[len(self._logits)] = id
-      self._logits = np.append(self._logits, priority) # TODO -- DOES THIS EVEN WORK? Are we doing the right thing and assigning unused indices to IDs?
+      self._logits.append(float(priority))
 
   @property
   def probabilities(self) -> np.ndarray:
-    return probabilities_from_logits(self._logits)
+    probabilities_from_logits(self._logits)
 
   def remove_priorities(self, ids: Sequence[int]) -> None:
     """Remove priorities associated with given IDs."""
@@ -833,30 +815,22 @@ class MGSCDistribution:
         raise KeyError(f'ID {id} does not exist.')
       idx = self._id_to_index.pop(id)
       del self._index_to_id[idx]
-      self._logits = np.delete(self._logits, idx)
+      del self._logits[idx]
 
-  def update_priorities(self, ids: Sequence[int], priorities: np.ndarray) -> None:
-    """Updates priorities for existing IDs in order of what's specified."""
+  def update_priorities(self, ids: Sequence[int], priorities: Sequence[float]) -> None:
+    """Updates priorities for existing IDs."""
     for id, priority in zip(ids, priorities):
       if id not in self._id_to_index:
         raise IndexError('ID %d does not exist.' % id)
       idx = self._id_to_index[id]
-      self._logits[idx] = priority
+      self._logits[idx] = float(priority)
 
   def sample(self, size: int) -> np.ndarray:
     """Returns sample of IDs."""
     if self.size == 0:
       raise RuntimeError('No IDs to sample.')
-    probs = self.probabilities
-    if np.isnan(probs).any():
-      raise ValueError(f"Probabilities contain a NaN. {self._logits=}, {len(self._logits)=}, {np.isnan(self._logits).any()=}, {(self._logits == np.inf).any()=}, {(self._logits == -np.inf).any()=}, {self._logits.max()=}, {self._logits.min()=}")
-    if not np.isfinite(probs).all():
-      raise ValueError(f"Probabilities are not finite. {self._logits=}, {len(self._logits)=}, {np.isnan(self._logits).any()=}, {(self._logits == np.inf).any()=}, {(self._logits == -np.inf).any()=}, {self._logits.max()=}, {self._logits.min()=}")
     # ids_in_order = [self._index_to_id[idx] for idx in range(len(self._logits))]
-    ids = self._random_state.choice(self.ids(), size=size, p=probs) # does choice require an array or a number?
-    # or np.arange to sample idx then convert to ids
-    # maybe jax.random.choice is faster as well?
-    # or is the python native random choice faster?
+    ids = self._random_state.choice(self.ids(), size=size, p=self.probabilities)
     return ids
 
   def uniform_sample(self, size: int, replace:bool=True) -> np.ndarray:
@@ -866,21 +840,19 @@ class MGSCDistribution:
     ids = self._random_state.choice(self.ids(), size=size, replace=replace)
     return ids
 
-  def get_priorities(self, ids: Sequence[int]) -> np.ndarray:
-    """Returns a numpy array of the requested logits for the ids specified in order of the ids."""
-    indices = [self._id_to_index[iden] for iden in ids]
-    return self._logits[indices]
+  def get_priorities(self, ids: Sequence[int]) -> Sequence[float]:
+    return [self._logits[self._id_to_index[iden]] for iden in ids]
 
   def ids(self) -> Iterable[int]:
     """Returns an iterable of all current IDs."""
-    return [self._index_to_id[idx] for idx in range(len(self._logits))] # loop of length 1e6 #self._id_to_index.keys()
+    return [self._index_to_id[idx] for idx in range(len(self._logits))] #self._id_to_index.keys()
 
   def ids_and_probs(self) -> Tuple[Sequence[int], Sequence[float]]:
     """Returns an iterable of current IDs and their corresponding probabilities."""
     # ids_in_order = [self._index_to_id[idx] for idx in range(len(self._logits))]
     return self.ids(), self.probabilities
 
-  def ids_and_logits(self) -> Tuple[Sequence[int], np.ndarray]:
+  def ids_and_logits(self) -> Tuple[Sequence[int], Sequence[float]]:
     """Returns an iterable of current IDs and their corresponding logits."""
     return self.ids(), self._logits
 
@@ -953,7 +925,7 @@ class MGSCFiFoTransitionReplay(Generic[ReplayStructure]):
     # Choose the new logit value for the new item
     # This is the mean probability of the list of probabilities, converted back to a logit value
     #   we use the logsumexp trick to avoid potential under/overflow
-    new_logit = 0
+    new_logit = 0.0
     if self._distribution.size > 0:
       new_logit = logsumexp(self._distribution._logits) - np.log(self._distribution.size)
 

@@ -24,9 +24,9 @@ from typing import Any, Callable, Generic, Iterable, Mapping, Optional, Sequence
 import dm_env
 import numpy as np
 import snappy
-
-import jax
 import jax.numpy as jnp
+
+import time
 
 from dqn_zoo import parts
 
@@ -44,34 +44,34 @@ class Transition(typing.NamedTuple):
   s_t: Optional[np.ndarray]
 
 
-# DEBUGGING operations
-def check_valid_pytree(pytree) -> None:
-  leaves, _ = jax.tree_util.tree_flatten(pytree)
-  for leaf in leaves:
-    check_valid_array(leaf)
-
-def check_valid_array(arr: np.ndarray) -> None:
-  if jnp.isnan(arr).any():
-    raise ValueError(f"Array contains a NaN. {arr=}, {arr.shape=}, {np.isnan(arr).any()=}, {(arr == np.inf).any()=}, {(arr == -np.inf).any()=}, {arr.max()=}, {arr.min()=}")
-  if not jnp.isfinite(arr).all():
-    raise ValueError(f"Array contains not-finite values. {arr=}, {arr.shape=}, {np.isnan(arr).any()=}, {(arr == np.inf).any()=}, {(arr == -np.inf).any()=}, {arr.max()=}, {arr.min()=}")
-
-def check_valid_value(value) -> None:
-  if jnp.isnan(value):
-    raise ValueError(f"Value is a NaN. {value=}, {np.isnan(value)=}, {(value == np.inf)=}, {(value == -np.inf)=}")
-  if not jnp.isfinite(value):
-    raise ValueError(f"Value is not finite. {value=}, {np.isnan(value)=}, {(value == np.inf)=}, {(value == -np.inf)=}")
-
-
-# PROBABILITY CALCULATING OPERATIONS
-def probabilities_from_logits(logits: np.ndarray) -> np.ndarray:
+def probabilities_from_logits(logits: Union[list,tuple,np.ndarray]) -> np.ndarray:
   """Calculate a list of probabilities from logits using the logsumexp trick to avoid under/overflow."""
+  if not isinstance(logits, np.ndarray):
+    logits = np.array(logits)
   return np.exp(logits - logsumexp(logits))
 
-def logsumexp(x: np.ndarray) -> np.ndarray:
-  """Calculates a safe logsumexp operation using the logsumexp trick to avoid under/overflow."""
+logsum_exp_times = {
+  'make_array': 0,
+  'take_max': 0,
+  'calculate': 0
+}
+
+def logsumexp(x: Union[list,tuple,np.ndarray]) -> np.ndarray:
+  """Calculates a safe logsumexp operation using the logsumexp trick to avoid under/ovwerflow."""
+  s = time.time()
+  if not isinstance(x, np.ndarray):
+    x = np.array(x)
+  e = time.time()
+  logsum_exp_times['make_array'] += e - s
+  s = time.time()
   c = x.max()
-  return c + np.log(np.sum(np.exp(x - c)))
+  e = time.time()
+  logsum_exp_times['take_max'] += e - s
+  s = time.time()
+  ret =  c + np.log(np.exp(x - c).sum())
+  e = time.time()
+  logsum_exp_times['calculate'] += e - s
+  return ret
 
 
 def JNPprobabilities_from_logits(logits: jnp.ndarray) -> jnp.ndarray:
@@ -79,9 +79,9 @@ def JNPprobabilities_from_logits(logits: jnp.ndarray) -> jnp.ndarray:
   return jnp.exp(logits - JNPlogsumexp(logits))
 
 def JNPlogsumexp(x: jnp.ndarray) -> jnp.ndarray:
-  """Calculates a safe logsumexp operation using the logsumexp trick to avoid under/overflow."""
+  """Calculates a safe logsumexp operation using the logsumexp trick to avoid under/ovwerflow."""
   c = x.max()
-  return c + jnp.log(jnp.sum(jnp.exp(x - c))) # generally the expensive operation of the two
+  return c + jnp.log(jnp.exp(x - c).sum()) # generally the expensive operation of the two
 
 
 class UniformDistribution:
@@ -802,12 +802,24 @@ class MGSCDistribution:
     self._random_state = random_state
     self._id_to_index = {}  # User ID -> probabilities index.
     self._index_to_id = {}  # Probabilities index -> user ID.
+    self.timing = {
+      'add_priorities': 0,
+      'get_probabilities': 0,
+      'update_probabilities': 0,
+      'sample': 0,
+      'uniform_sample': 0,
+      'get_priorities': 0,
+      'ids': 0,
+      'ids_and_probs': 0,
+      'ids_and_logits': 0
+    }
 
   def ensure_capacity(self, capacity: int) -> None:
     pass
 
   def add_priorities(self, ids: Sequence[int], priorities: Sequence[float]) -> None:
     """Add priorities for new IDs."""
+    s = time.time()
     for i in ids:
       if i in self._id_to_index:
         raise IndexError('ID %d already exists.' % i)
@@ -820,11 +832,17 @@ class MGSCDistribution:
     for id, priority in zip(ids, priorities):
       self._id_to_index[id] = len(self._logits)
       self._index_to_id[len(self._logits)] = id
-      self._logits = np.append(self._logits, priority) # TODO -- DOES THIS EVEN WORK? Are we doing the right thing and assigning unused indices to IDs?
+      self._logits = np.append(self._logits, priority)
+    e = time.time()
+    self.timing['add_priorities'] += e - s
 
   @property
   def probabilities(self) -> np.ndarray:
-    return probabilities_from_logits(self._logits)
+    s = time.time()
+    ret = probabilities_from_logits(self._logits)
+    e = time.time()
+    self.timing['get_probabilities'] += e - s
+    return ret
 
   def remove_priorities(self, ids: Sequence[int]) -> None:
     """Remove priorities associated with given IDs."""
@@ -836,53 +854,68 @@ class MGSCDistribution:
       self._logits = np.delete(self._logits, idx)
 
   def update_priorities(self, ids: Sequence[int], priorities: np.ndarray) -> None:
-    """Updates priorities for existing IDs in order of what's specified."""
+    """Updates priorities for existing IDs."""
+    s = time.time()
     for id, priority in zip(ids, priorities):
       if id not in self._id_to_index:
         raise IndexError('ID %d does not exist.' % id)
       idx = self._id_to_index[id]
       self._logits[idx] = priority
+    e = time.time()
+    self.timing['update_probabilities'] = e - s
 
   def sample(self, size: int) -> np.ndarray:
     """Returns sample of IDs."""
+    s = time.time()
     if self.size == 0:
       raise RuntimeError('No IDs to sample.')
-    probs = self.probabilities
-    if np.isnan(probs).any():
-      raise ValueError(f"Probabilities contain a NaN. {self._logits=}, {len(self._logits)=}, {np.isnan(self._logits).any()=}, {(self._logits == np.inf).any()=}, {(self._logits == -np.inf).any()=}, {self._logits.max()=}, {self._logits.min()=}")
-    if not np.isfinite(probs).all():
-      raise ValueError(f"Probabilities are not finite. {self._logits=}, {len(self._logits)=}, {np.isnan(self._logits).any()=}, {(self._logits == np.inf).any()=}, {(self._logits == -np.inf).any()=}, {self._logits.max()=}, {self._logits.min()=}")
     # ids_in_order = [self._index_to_id[idx] for idx in range(len(self._logits))]
-    ids = self._random_state.choice(self.ids(), size=size, p=probs) # does choice require an array or a number?
-    # or np.arange to sample idx then convert to ids
-    # maybe jax.random.choice is faster as well?
-    # or is the python native random choice faster?
+    ids = self._random_state.choice(self.ids(), size=size, p=self.probabilities)
+    e = time.time()
+    self.timing['sample'] += e - s
     return ids
 
   def uniform_sample(self, size: int, replace:bool=True) -> np.ndarray:
     """Returns uniform sample of IDs"""
+    s = time.time()
     if self.size == 0:
       raise RuntimeError('No IDs to sample.')
     ids = self._random_state.choice(self.ids(), size=size, replace=replace)
+    e = time.time()
+    self.timing['uniform_sample'] += e - s
     return ids
 
-  def get_priorities(self, ids: Sequence[int]) -> np.ndarray:
-    """Returns a numpy array of the requested logits for the ids specified in order of the ids."""
-    indices = [self._id_to_index[iden] for iden in ids]
-    return self._logits[indices]
+  def get_priorities(self, ids: Sequence[int]) -> Sequence[float]:
+    s = time.time()
+    ret = [self._logits[self._id_to_index[iden]] for iden in ids]
+    e = time.time()
+    self.timing['get_priorities'] += e - s
+    return ret
 
   def ids(self) -> Iterable[int]:
     """Returns an iterable of all current IDs."""
-    return [self._index_to_id[idx] for idx in range(len(self._logits))] # loop of length 1e6 #self._id_to_index.keys()
+    s = time.time()
+    ret = [self._index_to_id[idx] for idx in range(len(self._logits))] #self._id_to_index.keys()
+    e = time.time()
+    self.timing['ids'] += 1
+    return ret
 
   def ids_and_probs(self) -> Tuple[Sequence[int], Sequence[float]]:
     """Returns an iterable of current IDs and their corresponding probabilities."""
     # ids_in_order = [self._index_to_id[idx] for idx in range(len(self._logits))]
-    return self.ids(), self.probabilities
+    s = time.time()
+    ret = self.ids(), self.probabilities
+    e = time.time()
+    self.timing['ids_and_probs'] += e - s
+    return ret
 
   def ids_and_logits(self) -> Tuple[Sequence[int], np.ndarray]:
     """Returns an iterable of current IDs and their corresponding logits."""
-    return self.ids(), self._logits
+    s = time.time()
+    ret = self.ids(), self._logits
+    e = time.time()
+    self.timing['ids_and_logits'] += e - s
+    return ret
 
   @property
   def capacity(self) -> int:
@@ -941,9 +974,22 @@ class MGSCFiFoTransitionReplay(Generic[ReplayStructure]):
     self._distribution = MGSCDistribution(random_state=random_state, max_capacity=self._capacity)
     self._storage = collections.OrderedDict()  # ID -> item.
     self._t = 0  # Used to generate unique IDs for each item.
+    self.timing = {
+      'add_logit_calc': 0,
+      'add_total': 0,
+      'sample': 0,
+      'ids': 0,
+      'stack_transitions': 0,
+      'transitions_and_probs': 0,
+      'transitions_and_logits': 0,
+      'batch_of_ids_transitions_and_logits': 0,
+      'update_priorities': 0,
+      'size': 0
+    }
 
   def add(self, item: ReplayStructure) -> None:
     """Adds single item to replay."""
+    st = time.time()
     if self.size == self._capacity:
       oldest_id, _ = self._storage.popitem(last=False)
       self._distribution.remove_priorities([oldest_id])
@@ -953,13 +999,18 @@ class MGSCFiFoTransitionReplay(Generic[ReplayStructure]):
     # Choose the new logit value for the new item
     # This is the mean probability of the list of probabilities, converted back to a logit value
     #   we use the logsumexp trick to avoid potential under/overflow
-    new_logit = 0
+    s = time.time()
+    new_logit = 0.0
     if self._distribution.size > 0:
       new_logit = logsumexp(self._distribution._logits) - np.log(self._distribution.size)
+    e = time.time()
+    self.timing['add_logit_calc'] += e - s
 
     self._distribution.add_priorities([item_id], [new_logit])
     self._storage[item_id] = self._encoder(item)
     self._t += 1
+    et = time.time()
+    self.timing['add_total'] += et - st
 
   def get(self, ids: Sequence[int]) -> Iterable[ReplayStructure]:
     """Retrieves items by IDs."""
@@ -968,35 +1019,59 @@ class MGSCFiFoTransitionReplay(Generic[ReplayStructure]):
 
   def sample(self, size: int) -> ReplayStructure:
     """Samples batch of items from replay according to the distribution."""
+    s = time.time()
     ids = self._distribution.sample(size)
-    return self.stack_transitions(ids)  # pytype: disable=not-callable
+    ret = self.stack_transitions(ids)  # pytype: disable=not-callable
+    e = time.time()
+    self.timing['sample'] += e - s
+    return ret
 
   def ids(self) -> Iterable[int]:
     """Get IDs of stored transitions, for testing."""
-    return self._storage.keys()
+    s = time.time()
+    ret = self._storage.keys()
+    e = time.time()
+    self.timing['ids'] += e - s
+    return ret
 
   def stack_transitions(self, ids) -> ReplayStructure:
+    s = time.time()
     samples = self.get(ids)
     transposed = zip(*samples)
     stacked = [np.stack(xs, axis=0) for xs in transposed]
-    return type(self._structure)(*stacked)  # pytype: disable=not-callable
+    ret = type(self._structure)(*stacked)  # pytype: disable=not-callable
+    e = time.time()
+    self.timing['stack_transitions'] += e - s
+    return ret
 
   def transitions_and_probs(self):
     """Get the transitions and their associated probabilities."""
+    s = time.time()
     ids, probs = self._distribution.ids_and_probs()
-    return self.stack_transitions(ids), probs
+    ret = (self.stack_transitions(ids), probs)
+    e = time.time()
+    self.timing['transitions_and_probs'] += e - s
+    return ret
 
   def transitions_and_logits(self):
     """Get the transitions and their associated logits."""
+    s = time.time()
     ids, logits = self._distribution.ids_and_logits()
-    return self.stack_transitions(ids), logits
+    ret = (self.stack_transitions(ids), logits)
+    e = time.time()
+    self.timing['transitions_and_logits'] += e - s
+    return ret
   
   def batch_of_ids_transitions_and_logits(self, size: int) -> Tuple[Iterable[int], ReplayStructure, Sequence[float]]:
     """Return a batch of transitions sampled uniformly (not according to the distribution) without replacement."""
+    s = time.time()
     ids = self._distribution.uniform_sample(size, replace=False)
     transitions = self.stack_transitions(ids)
     logits = self._distribution.get_priorities(ids)
-    return ids, transitions, logits
+    ret = (ids, transitions, logits)
+    e = time.time()
+    self.timing['batch_of_ids_transitions_and_logits'] += e - s
+    return ret
 
   def slice_of_ids_transitions_and_logits(self, size: int):
     """Meant to return slices of the array (like every 5th item) and its associated logits."""
@@ -1007,12 +1082,19 @@ class MGSCFiFoTransitionReplay(Generic[ReplayStructure]):
   
   def update_priorities(self, ids:Sequence[int], priorities:Sequence[float]):
     """Update the priorities of the associated IDs."""
+    s = time.time()
     self._distribution.update_priorities(ids, priorities)
+    e = time.time()
+    self.timing['update_priorities'] += e - s
 
   @property
   def size(self) -> int:
     """Number of items currently contained in the replay."""
-    return len(self._storage)
+    s = time.time()
+    ret = len(self._storage)
+    e = time.time()
+    self.timing['size'] += e - s
+    return ret
 
   @property
   def capacity(self) -> int:

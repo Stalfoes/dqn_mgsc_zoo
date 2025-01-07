@@ -46,7 +46,7 @@ from dqn_zoo import gym_atari
 from dqn_zoo import networks
 from dqn_zoo import parts
 from dqn_zoo import processors
-from dqn_zoo import replay as replay_lib
+from dqn_zoo import replay_circular as replay_lib
 from dqn_zoo.dqn_mgsc_batched import agent
 
 # Relevant flag values are expressed in terms of environment frames.
@@ -105,10 +105,11 @@ def main(argv):
   """Trains DQN agent on Atari."""
   del argv
   logging.info('DQN with MGSC with batches of size=%d on Atari on %s.', _META_BATCH_SIZE.value, jax.lib.xla_bridge.get_backend().platform)
-  random_state = np.random.RandomState(_SEED.value)
+  random_state = np.random.default_rng(_SEED.value) # default_rng
   rng_key = jax.random.PRNGKey(
-      random_state.randint(-sys.maxsize - 1, sys.maxsize + 1, dtype=np.int64)
+      int(random_state.integers(-sys.maxsize - 1, sys.maxsize + 1, dtype=np.int64))
   )
+#   rng_key, replay_rng_key = jax.random.split(rng_key)
 
   if _RESULTS_CSV_PATH.value:
     writer = parts.CsvWriter(_RESULTS_CSV_PATH.value)
@@ -118,13 +119,13 @@ def main(argv):
   def environment_builder():
     """Creates Atari environment."""
     env = gym_atari.GymAtari(
-        _ENVIRONMENT_NAME.value, seed=random_state.randint(1, 2**32)
+        _ENVIRONMENT_NAME.value, seed=int(random_state.integers(1, 2**32))
     )
     return gym_atari.RandomNoopsEnvironmentWrapper(
         env,
         min_noop_steps=1,
         max_noop_steps=30,
-        seed=random_state.randint(1, 2**32),
+        seed=int(random_state.integers(1, 2**32)),
     )
 
   env = environment_builder()
@@ -207,6 +208,9 @@ def main(argv):
   replay = replay_lib.MGSCFiFoTransitionReplay( # CHANGED
       _REPLAY_CAPACITY.value, replay_structure, random_state, encoder, decoder
   )
+#   replay = replay_lib.MGSCFiFoTransitionReplay( # CHANGED
+#       _REPLAY_CAPACITY.value, replay_structure, rng_key, encoder, decoder
+#   )
 
   optimizer = optax.rmsprop(
       learning_rate=_LEARNING_RATE.value,
@@ -297,8 +301,19 @@ def main(argv):
     log_output_str = ', '.join(('%s: ' + f) % (n, v) for n, v, f in log_output)
     logging.info(log_output_str)
     writer.write(collections.OrderedDict((n, v) for n, v, _ in log_output))
+    # print('==========\n', train_agent.times, '\n==========')
+    """{
+        'meta-update':              {'total_time': 206.1919207572937,  'num_calls': 49924},
+        'update':                   {'total_time': 612.2587575912476,  'num_calls': 50002},
+        'replay-sample-meta-batch': {'total_time': 2775.8889498710632, 'num_calls': 49924},
+        'replay-sample-batch':      {'total_time': 2855.5582740306854, 'num_calls': 50002},
+        'replay-add':               {'total_time': 201.2858271598816,  'num_calls': 250052},
+        'replay-update':            {'total_time': 26.78634476661682,  'num_calls': 49924}
+        } 
+    """
     state.iteration += 1
     checkpoint.save()
+    
 
   end_time = time()
   print(f"TIME = {end_time - start_time} seconds")
@@ -308,5 +323,6 @@ def main(argv):
 if __name__ == '__main__':
   config.update('jax_platform_name', 'gpu')  # Default to GPU.
   config.update('jax_numpy_rank_promotion', 'raise')
+  config.update("jax_debug_nans", True)
   config.config_with_absl()
   app.run(main)

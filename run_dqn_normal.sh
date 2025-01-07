@@ -46,4 +46,7 @@ python -m atari_py.import_roms atari_roms
 python -m dqn_zoo.dqn.run_atari \
     --seed="${SLURM_ARRAY_TASK_ID}" \
     --num_iterations=50 \
-    --results_csv_path="./results/dqn/seed_${SLURM_ARRAY_TASK_ID}.csv"
+    --results_csv_path="/home/kapeluck/scratch/dqn_zoo_results/results/dqn/seed_${SLURM_ARRAY_TASK_ID}.csv"
+
+# python -m dqn_zoo.dqn.run_atari --seed=99 --num_iterations=2 --results_csv_path="/home/kapeluck/scratch/dqn_zoo_results/results/dqn/checkpoint_testing/seed_99.csv"
+# python -m dqn_zoo.dqn.run_atari --seed=99 --num_iterations=4 --results_csv_path="/home/kapeluck/scratch/dqn_zoo_results/results/dqn/checkpoint_testing/normal/seed_99.csv"

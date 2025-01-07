@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=mgscdqn_batched_200m_timing_frames
-#SBATCH --output=/home/kapeluck/scratch/dqn_zoo_results/results/mgscdqn_batched_200m_timing/mgscdqn_batched_200m_timing_frames_%A_%a.out
-#SBATCH --error=/home/kapeluck/scratch/dqn_zoo_results/results/mgscdqn_batched_200m_timing/mgscdqn_batched_200m_timing_frames_%A_%a.err
-#SBATCH --array=0-4
+#SBATCH --output=/home/kapeluck/scratch/dqn_zoo_results/results/mgscdqn_batched_200m_timing/mgscdqn_batched_200m_size5_%A_%a.out
+#SBATCH --error=/home/kapeluck/scratch/dqn_zoo_results/results/mgscdqn_batched_200m_timing/mgscdqn_batched_200m_size5_%A_%a.err
+#SBATCH --array=0-1
 #SBATCH --time=5:59:59
 #SBATCH --mem=25G
 #SBATCH --nodes=1

@@ -64,6 +64,8 @@ def check_valid_value(value) -> None:
 
 
 # PROBABILITY CALCULATING OPERATIONS
+# The issue with JIT-compiling these operations is that we call them with different length logits
+# So it would re-compile like a million times
 def probabilities_from_logits(logits: np.ndarray) -> np.ndarray:
   """Calculate a list of probabilities from logits using the logsumexp trick to avoid under/overflow."""
   return np.exp(logits - logsumexp(logits))
@@ -73,7 +75,7 @@ def logsumexp(x: np.ndarray) -> np.ndarray:
   c = x.max()
   return c + np.log(np.sum(np.exp(x - c)))
 
-
+# If these equal the functions above, then the functions above also get JIT compiled!
 def JNPprobabilities_from_logits(logits: jnp.ndarray) -> jnp.ndarray:
   """Calculate a list of probabilities from logits using the logsumexp trick to avoid under/overflow."""
   return jnp.exp(logits - JNPlogsumexp(logits))
@@ -81,7 +83,161 @@ def JNPprobabilities_from_logits(logits: jnp.ndarray) -> jnp.ndarray:
 def JNPlogsumexp(x: jnp.ndarray) -> jnp.ndarray:
   """Calculates a safe logsumexp operation using the logsumexp trick to avoid under/overflow."""
   c = x.max()
-  return c + jnp.log(jnp.sum(jnp.exp(x - c))) # generally the expensive operation of the two
+  return c + jnp.log(jnp.sum(jnp.exp(x - c)))
+
+
+ItemType = TypeVar('ItemType')
+class CircularBuffer(Generic[ItemType]):
+  def __init__(self, capacity:int):
+    self._buffer = None
+    self._capacity = capacity
+    self._size = 0
+    self._left_head = 0
+    self._right_head = 0
+  @property
+  def capacity(self) -> int:
+    return self._capacity
+  @property
+  def size(self) -> int:
+    return self._size
+  def is_full(self) -> bool:
+    return self._size == self._capacity
+  def _initialize(self, item:ItemType) -> None:
+    self._buffer = type(item)(*[
+      np.zeros((self._capacity, *item[idx].shape), dtype=item[idx].dtype)
+      for idx in range(len(item))
+    ])
+  def add(self, item:ItemType) -> None:
+    if self.is_full():
+      raise BufferError("Buffer is full and cannot be added to. Pop an item first.")
+    if self._buffer is None:
+      self._initialize(item)
+    self._list[self._right_head] = item
+    self._right_head = self._right_head + 1
+    # self._right_head = (self._right_head + 1) % self.capacity
+    if self._right_head == self._capacity:
+      self._right_head = 0
+    self._size += 1
+  def popleft(self) -> ItemType:
+    if self._size == 0:
+      raise BufferError("Buffer is empty and cannot be popped from. Add an item first.")
+    item = self._list[self._left_head]
+    # self._list[self._left_head] = None
+    self._left_head = self._left_head + 1
+    # self._left_head = (self._left_head + 1) % self.capacity
+    if self._left_head == self._capacity:
+      self._left_head = 0
+    self._size -= 1
+    return item
+  def __getitem__(self, key:int) -> ItemType:
+    if self._size == 0:
+      raise BufferError("Buffer is empty and cannot be indexed. Add an item first.")
+    idx = (self._left_head + key) % self._capacity
+    return self._list[idx]
+  def __len__(self):
+    return self._size
+
+class CircularLogitBuffer:
+  def __init__(self, capacity:int, random_state:np.random.Generator):
+  # def __init__(self, capacity:int, rng_key:jnp.ndarray):
+    self._logits = np.full((capacity,), -np.inf, dtype=np.float32)
+    self._capacity = capacity
+    self._size = 0
+    self._left_head = 0
+    self._right_head = 0
+    self._rng_state = random_state
+    # self._rng_key = rng_key
+  @property
+  def capacity(self) -> int:
+    return self._capacity
+  @property
+  def size(self) -> int:
+    return self._size
+  def is_full(self) -> bool:
+    return self._size == self._capacity
+  def add(self, item:Optional[np.float32]=None) -> None:
+    if self.is_full():
+      raise BufferError("Buffer is full and cannot be added to. Pop an item first.")
+    if item is None:
+      if self._size == 0:
+        item = 0
+      else:
+        item = logsumexp(self._logits) - np.log(self._size)
+    self._logits[self._right_head] = item
+    # self._right_head = (self._right_head + 1) % self.capacity
+    self._right_head = self._right_head + 1
+    if self._right_head == self._capacity:
+      self._right_head = 0
+    self._size += 1
+  def popleft(self) -> np.float32:
+    if self._size == 0:
+      raise BufferError("Buffer is empty and cannot be popped from. Add an item first.")
+    item = self._logits[self._left_head]
+    self._logits[self._left_head] = -np.inf
+    # self._left_head = (self._left_head + 1) % self.capacity
+    self._left_head = self._left_head + 1
+    if self._left_head == self._capacity:
+      self._left_head = 0
+    self._size -= 1
+    return item
+  def __getitem__(self, key):
+    if self._size == 0:
+      raise BufferError("Buffer is empty and cannot be indexed. Add an item first.")
+    if (key >= self._size).any():
+      raise KeyError(f"Buffer is not large enough to index at position {key}. Must be in [0,{self.size-1}).")
+    idx = (self._left_head + key) % self._capacity
+    return self._logits[idx]
+  def __setitem__(self, key, item):
+    if (key >= self._size).any():
+      raise KeyError(f"Buffer is not large enough to index at position {key}. Must be in [0,{self.size-1}).")
+    idx = (self._left_head + key) % self._capacity
+    self._logits[idx] = item
+  def as_probs(self) -> np.ndarray:
+    return probabilities_from_logits(self._logits)
+  def sample(self, size:int) -> jnp.ndarray:
+    if self._size < size:
+      raise BufferError(f"Cannot sample from buffer with length {self._size} when requested sample size was {size}.")
+    absolute_indices = self._rng_state.choice(self._capacity, size=size, p=self.as_probs())
+    # self._rng_key, key = jax.random.split(self._rng_key)
+    # probs = self.as_probs()
+    # try:
+    #   absolute_indices = jax.random.choice(key, self._capacity, shape=(size,), p=probs)
+    # except Exception as e:
+    #   print(f'FAILURE NON-UNIFORM\n=========================\n\t{self._rng_key=}\n\t{type(self._rng_key)=}\n\t{key=}\n\t{type(key)=}\n\t{self._capacity=}\n\t{type(self._capacity)=}\n\t{size=}\n\t{type(size)=}\n\t{probs=}\n\t{type(probs)=}\n=========================')
+    #   raise e
+    indices = (absolute_indices - self._left_head) % self._capacity
+    return indices
+  def sample_uniform(self, size:int, replace:bool=True) -> jnp.ndarray:
+    if self._size < size:
+      raise BufferError(f"Cannot sample from buffer with length {self._size} when requested sample size was {size}.")
+    relative_indices = self._rng_state.choice(self._size, size=size, replace=replace)
+    # self._rng_key, key = jax.random.split(self._rng_key)
+    # try:
+    #   relative_indices = jax.random.choice(key, self._size, shape=(size,), replace=replace)
+    # except Exception as e:
+    #   print(f'FAILURE UNIFORM\n=========================\n\t{self._rng_key=}\n\t{type(self._rng_key)=}\n\t{key=}\n\t{type(key)=}\n\t{self._size=}\n\t{type(self._size)=}\n\t{size=}\n\t{type(size)=}\n\t{replace=}\n\t{type(replace)=}\n=========================')
+    #   raise e
+    return relative_indices
+  def get_state(self) -> Mapping[str, Any]:
+    """Retrieves distribution state as a dictionary (e.g. for serialization)."""
+    return {
+      'capacity': self._capacity,
+      'logits': self._logits,
+      'size': self._size,
+      'left_head': self._left_head,
+      'right_head': self._right_head,
+      'rng_state': self._rng_state,
+      # 'rng_key': self._rng_key,
+    }
+  def set_state(self, state: Mapping[str, Any]) -> None:
+    """Sets distribution state from a (potentially de-serialized) dictionary."""
+    self._capacity = state['capacity']
+    self._logits = state['logits']
+    self._size = state['size']
+    self._left_head = state['left_head']
+    self._right_head = state['right_head']
+    self._rng_state = state['rng_state']
+    # self._rng_key = state['rng_key']
 
 
 class UniformDistribution:
@@ -789,7 +945,7 @@ class MGSCDistribution:
 
   def __init__(
       self,
-      random_state: np.random.RandomState,
+      rng_key: jnp.ndarray,
       min_capacity: int = 0,
       max_capacity: Optional[int] = None,
   ):
@@ -798,126 +954,88 @@ class MGSCDistribution:
     if min_capacity < 0:
       raise ValueError('Require min_capacity >= 0.')
     self._max_capacity = max_capacity
-    self._logits:np.ndarray = np.array((), dtype=np.float32)
-    self._random_state = random_state
-    self._id_to_index = {}  # User ID -> probabilities index.
-    self._index_to_id = {}  # Probabilities index -> user ID.
+    self._buffer = CircularLogitBuffer(capacity=max_capacity)
+    self._rng_key = rng_key
 
   def ensure_capacity(self, capacity: int) -> None:
     pass
 
-  def add_priorities(self, ids: Sequence[int], priorities: Sequence[float]) -> None:
+  def add_priorities(self, indices: Sequence[int], priorities: Sequence[float]) -> None:
     """Add priorities for new IDs."""
-    for i in ids:
-      if i in self._id_to_index:
+    for i in indices:
+      if 0 <= i and i < len(self._logits):
         raise IndexError('ID %d already exists.' % i)
 
-    new_size = self.size + len(ids)
+    new_size = self.size + len(indices)
     if self._max_capacity is not None and new_size > self._max_capacity:
       raise ValueError('Cannot add IDs as max capacity would be exceeded.')
 
-    # Assign unused indices to IDs.
-    for id, priority in zip(ids, priorities):
-      self._id_to_index[id] = len(self._logits)
-      self._index_to_id[len(self._logits)] = id
-      self._logits = np.append(self._logits, priority) # TODO -- DOES THIS EVEN WORK? Are we doing the right thing and assigning unused indices to IDs?
+    # Add new priorities
+    self._logits = np.pad(self._logits, (0, len(indices)))
+    self._logits[indices] = priorities
+    self._buffer.add(prior)
 
   @property
   def probabilities(self) -> np.ndarray:
     return probabilities_from_logits(self._logits)
 
-  def remove_priorities(self, ids: Sequence[int]) -> None:
+  def remove_priorities(self, indices: Sequence[int]) -> None:
     """Remove priorities associated with given IDs."""
-    for id in ids:
-      if id not in self._id_to_index:
-        raise KeyError(f'ID {id} does not exist.')
-      idx = self._id_to_index.pop(id)
-      del self._index_to_id[idx]
-      self._logits = np.delete(self._logits, idx)
+    self._logits = np.delete(self._logits, indices)
 
-  def update_priorities(self, ids: Sequence[int], priorities: np.ndarray) -> None:
+  def update_priorities(self, indices: Sequence[int], priorities: np.ndarray) -> None:
     """Updates priorities for existing IDs in order of what's specified."""
-    for id, priority in zip(ids, priorities):
-      if id not in self._id_to_index:
-        raise IndexError('ID %d does not exist.' % id)
-      idx = self._id_to_index[id]
-      self._logits[idx] = priority
+    self._logits[np.asarray(indices)] = priorities
 
   def sample(self, size: int) -> np.ndarray:
-    """Returns sample of IDs."""
+    """Returns sample of indices."""
     if self.size == 0:
-      raise RuntimeError('No IDs to sample.')
+      raise RuntimeError('No items to sample.')
     probs = self.probabilities
-    if np.isnan(probs).any():
-      raise ValueError(f"Probabilities contain a NaN. {self._logits=}, {len(self._logits)=}, {np.isnan(self._logits).any()=}, {(self._logits == np.inf).any()=}, {(self._logits == -np.inf).any()=}, {self._logits.max()=}, {self._logits.min()=}")
-    if not np.isfinite(probs).all():
-      raise ValueError(f"Probabilities are not finite. {self._logits=}, {len(self._logits)=}, {np.isnan(self._logits).any()=}, {(self._logits == np.inf).any()=}, {(self._logits == -np.inf).any()=}, {self._logits.max()=}, {self._logits.min()=}")
     # ids_in_order = [self._index_to_id[idx] for idx in range(len(self._logits))]
-    ids = self._random_state.choice(self.ids(), size=size, p=probs) # does choice require an array or a number?
+    self._rng_key, key = jax.random.split(self._rng_key)
+    indices = jax.random.choice(key, self.size, shape=(size,), p=probs)
     # or np.arange to sample idx then convert to ids
     # maybe jax.random.choice is faster as well?
     # or is the python native random choice faster?
-    return ids
+    return indices
 
   def uniform_sample(self, size: int, replace:bool=True) -> np.ndarray:
-    """Returns uniform sample of IDs"""
+    """Returns uniform sample of indices."""
     if self.size == 0:
-      raise RuntimeError('No IDs to sample.')
-    ids = self._random_state.choice(self.ids(), size=size, replace=replace)
-    return ids
+      raise RuntimeError('No items to sample.')
+    self._rng_key, key = jax.random.split(self._rng_key)
+    indices = jax.random.choice(key, self.size, shape=(size,), replace=replace)
+    return indices
 
-  def get_priorities(self, ids: Sequence[int]) -> np.ndarray:
+  def get_priorities(self, indices: Sequence[int]) -> np.ndarray:
     """Returns a numpy array of the requested logits for the ids specified in order of the ids."""
-    indices = [self._id_to_index[iden] for iden in ids]
-    return self._logits[indices]
-
-  def ids(self) -> Iterable[int]:
-    """Returns an iterable of all current IDs."""
-    return [self._index_to_id[idx] for idx in range(len(self._logits))] # loop of length 1e6 #self._id_to_index.keys()
-
-  def ids_and_probs(self) -> Tuple[Sequence[int], Sequence[float]]:
-    """Returns an iterable of current IDs and their corresponding probabilities."""
-    # ids_in_order = [self._index_to_id[idx] for idx in range(len(self._logits))]
-    return self.ids(), self.probabilities
-
-  def ids_and_logits(self) -> Tuple[Sequence[int], np.ndarray]:
-    """Returns an iterable of current IDs and their corresponding logits."""
-    return self.ids(), self._logits
+    return self._logits[np.asarray(indices)]
 
   @property
   def capacity(self) -> int:
-    """Number of IDs that can be stored until memory needs to be allocated."""
+    """Number of items that can be stored until memory needs to be allocated."""
     return len(self._logits)
 
   @property
   def size(self) -> int:
-    """Number of IDs currently tracked."""
-    return len(self._id_to_index)
+    """Number of items currently tracked."""
+    return len(self._logits)
 
   def get_state(self) -> Mapping[str, Any]:
     """Retrieves distribution state as a dictionary (e.g. for serialization)."""
     return {
-        'id_to_index': self._id_to_index,
-        'index_to_id': self._index_to_id,
+        'rng_key': self._rng_key,
         'logits': self._logits,
     }
 
   def set_state(self, state: Mapping[str, Any]) -> None:
     """Sets distribution state from a (potentially de-serialized) dictionary."""
-    self._id_to_index = state['id_to_index']
-    self._index_to_id = state['index_to_id']
+    self._rng_key = state['rng_key']
     self._logits = state['logits']
 
   def check_valid(self) -> Tuple[bool, str]:
     """Checks internal consistency."""
-    if len(self._id_to_index) != len(self._index_to_id):
-      return False, 'ID to index maps are not the same size.'
-    for i in self._id_to_index:
-      if self._index_to_id[self._id_to_index[i]] != i:
-        return False, 'ID %d should map to itself.' % i
-    # Indices map to themselves because of previous check and uniqueness.
-    if len(self._logits) != len(self._id_to_index):
-      return False, f'Number of priorities must match number of IDs'
     return True
 
 
@@ -928,86 +1046,62 @@ class MGSCFiFoTransitionReplay(Generic[ReplayStructure]):
       self,
       capacity: int,
       structure: ReplayStructure,
-      random_state: np.random.RandomState,
+      random_state: np.random.Generator,
+      # rng_key: jnp.ndarray,
       encoder: Optional[Callable[[ReplayStructure], Any]] = None,
       decoder: Optional[Callable[[Any], ReplayStructure]] = None,
   ):
     self._capacity = capacity
     self._structure = structure
-    self._random_state = random_state
     self._encoder = encoder or (lambda s: s)
     self._decoder = decoder or (lambda s: s)
 
-    self._distribution = MGSCDistribution(random_state=random_state, max_capacity=self._capacity)
-    self._storage = collections.OrderedDict()  # ID -> item.
-    self._t = 0  # Used to generate unique IDs for each item.
+    # self._distribution = CircularLogitBuffer(capacity=capacity, random_state=random_state)
+    self._distribution = CircularLogitBuffer(capacity=capacity, rng_key=rng_key)
+    self._storage = CircularBuffer(capacity=capacity)
+    self._t = 0  # counter of elements added
 
   def add(self, item: ReplayStructure) -> None:
     """Adds single item to replay."""
-    if self.size == self._capacity:
-      oldest_id, _ = self._storage.popitem(last=False)
-      self._distribution.remove_priorities([oldest_id])
+    if self._storage.is_full():
+      self._distribution.popleft()
+      self._storage.popleft()
 
-    item_id = self._t
-    
-    # Choose the new logit value for the new item
-    # This is the mean probability of the list of probabilities, converted back to a logit value
-    #   we use the logsumexp trick to avoid potential under/overflow
-    new_logit = 0
-    if self._distribution.size > 0:
-      new_logit = logsumexp(self._distribution._logits) - np.log(self._distribution.size)
-
-    self._distribution.add_priorities([item_id], [new_logit])
-    self._storage[item_id] = self._encoder(item)
+    self._distribution.add()
+    self._storage.add(self._encoder(item))
     self._t += 1
 
-  def get(self, ids: Sequence[int]) -> Iterable[ReplayStructure]:
+  def get(self, indices: Sequence[int]) -> Iterable[ReplayStructure]:
     """Retrieves items by IDs."""
-    for i in ids:
+    for i in indices:
       yield self._decoder(self._storage[i])
 
   def sample(self, size: int) -> ReplayStructure:
     """Samples batch of items from replay according to the distribution."""
-    ids = self._distribution.sample(size)
-    return self.stack_transitions(ids)  # pytype: disable=not-callable
+    indices = self._distribution.sample(size)
+    return self.stack_transitions(indices)  # pytype: disable=not-callable
 
-  def ids(self) -> Iterable[int]:
-    """Get IDs of stored transitions, for testing."""
-    return self._storage.keys()
-
-  def stack_transitions(self, ids) -> ReplayStructure:
-    samples = self.get(ids)
+  def stack_transitions(self, indices: Sequence[int]) -> ReplayStructure:
+    samples = self.get(indices)
     transposed = zip(*samples)
     stacked = [np.stack(xs, axis=0) for xs in transposed]
     return type(self._structure)(*stacked)  # pytype: disable=not-callable
 
-  def transitions_and_probs(self):
-    """Get the transitions and their associated probabilities."""
-    ids, probs = self._distribution.ids_and_probs()
-    return self.stack_transitions(ids), probs
+  # def transitions_and_logits(self) -> Tuple[ReplayStructure, np.ndarray]:
+  #   """Get the transitions and their associated logits."""
+  #   indices = np.arange(self.size)
+  #   return self.stack_transitions(indices), self._distribution._logits
 
-  def transitions_and_logits(self):
-    """Get the transitions and their associated logits."""
-    ids, logits = self._distribution.ids_and_logits()
-    return self.stack_transitions(ids), logits
-  
-  def batch_of_ids_transitions_and_logits(self, size: int) -> Tuple[Iterable[int], ReplayStructure, Sequence[float]]:
+  def batch_of_ids_transitions_and_logits(self, size: int) -> Tuple[Sequence[int], ReplayStructure, Sequence[float]]:
     """Return a batch of transitions sampled uniformly (not according to the distribution) without replacement."""
-    ids = self._distribution.uniform_sample(size, replace=False)
-    transitions = self.stack_transitions(ids)
-    logits = self._distribution.get_priorities(ids)
-    return ids, transitions, logits
-
-  def slice_of_ids_transitions_and_logits(self, size: int):
-    """Meant to return slices of the array (like every 5th item) and its associated logits."""
-    num_slices = self.size // size
-    def slices():
-      pass
-    raise NotImplementedError("TODO")
+    indices = self._distribution.sample_uniform(size, replace=False)
+    transitions = self.stack_transitions(indices)
+    logits = self._distribution[np.asarray(indices)]
+    return indices, transitions, logits
   
-  def update_priorities(self, ids:Sequence[int], priorities:Sequence[float]):
+  def update_priorities(self, indices:Sequence[int], priorities:Sequence[float]):
     """Update the priorities of the associated IDs."""
-    self._distribution.update_priorities(ids, priorities)
+    self._distribution[np.asarray(indices)] = priorities
 
   @property
   def size(self) -> int:
@@ -1023,14 +1117,14 @@ class MGSCFiFoTransitionReplay(Generic[ReplayStructure]):
     """Retrieves replay state as a dictionary (e.g. for serialization)."""
     return {
         # Serialize OrderedDict as a simpler, more common data structure.
-        'storage': list(self._storage.items()),
+        'storage': self._storage,
         't': self._t,
         'distribution': self._distribution.get_state(),
     }
 
   def set_state(self, state: Mapping[str, Any]) -> None:
     """Sets replay state from a (potentially de-serialized) dictionary."""
-    self._storage = collections.OrderedDict(state['storage'])
+    self._storage = state['storage']
     self._t = state['t']
     self._distribution.set_state(state['distribution'])
 
@@ -1038,8 +1132,8 @@ class MGSCFiFoTransitionReplay(Generic[ReplayStructure]):
     """Checks internal consistency."""
     if self._t < len(self._storage):
       return False, 't should be >= storage size.'
-    if set(self._storage.keys()) != set(self._distribution.ids()):
-      return False, 'IDs in storage and distribution do not match.'
+    # if set(self._storage.keys()) != set(self._distribution.ids()):
+      # return False, 'IDs in storage and distribution do not match.'
     return self._distribution.check_valid()
 
 
