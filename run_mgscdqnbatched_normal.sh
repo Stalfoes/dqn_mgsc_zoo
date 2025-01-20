@@ -1,13 +1,13 @@
 #!/bin/bash
 #SBATCH --job-name=mgscdqn_batched_100m_metasize_100
-#SBATCH --output=/home/kapeluck/scratch/dqn_zoo_results/results/mgscdqn_batched_100m/metasize_100/mgscdqn_batched_100m_metasize_100_%A_%a.out
-#SBATCH --error=/home/kapeluck/scratch/dqn_zoo_results/results/mgscdqn_batched_100m/metasize_100/mgscdqn_batched_100m_metasize_100_%A_%a.err
+#SBATCH --output=/home/kapeluck/scratch/dqn_zoo_results/results/mgscdqn_batched_100m/alien/metasize_100/mgscdqn_batched_100m_metasize_100_%A_%a.out
+#SBATCH --error=/home/kapeluck/scratch/dqn_zoo_results/results/mgscdqn_batched_100m/alien/metasize_100/mgscdqn_batched_100m_metasize_100_%A_%a.err
 #SBATCH --array=0-4
 #SBATCH --time=167:59:59
-#SBATCH --mem=25G
+#SBATCH --mem=35G
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=2
-#SBATCH --gpus-per-node=v100:1
+#SBATCH --gpus-per-node=a100:1
 #SBATCH --ntasks-per-node=1
 #SBATCH --account=rrg-mbowling-ad
 #SBATCH --mail-user=kapeluck@ualberta.ca
@@ -45,7 +45,7 @@ python -m atari_py.import_roms atari_roms
 # 1 iteration : 1M train frames
 python -m dqn_zoo.dqn_mgsc_batched.run_atari \
     --seed="${SLURM_ARRAY_TASK_ID}" \
-    --environment_name=jamesbond \
-    --num_iterations=100 \
+    --environment_name=alien \
+    --num_iterations=200 \
     --meta_batch_size=100 \
-    --results_csv_path="/home/kapeluck/scratch/dqn_zoo_results/results/mgscdqn_batched_100m/metasize_100/seed_${SLURM_ARRAY_TASK_ID}.csv"
+    --results_csv_path="/home/kapeluck/scratch/dqn_zoo_results/results/mgscdqn_batched_100m/alien/metasize_100/seed_${SLURM_ARRAY_TASK_ID}.csv"

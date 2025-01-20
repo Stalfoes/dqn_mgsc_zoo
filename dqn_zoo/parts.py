@@ -23,6 +23,7 @@ import csv
 import os
 import timeit
 from typing import Any, Iterable, Mapping, Optional, Sequence, Tuple, Union
+import pickle
 
 import distrax
 import dm_env
@@ -464,7 +465,7 @@ class CsvWriter:
   def write(self, values: collections.OrderedDict[str, float]) -> None:
     """Appends given values as new row to CSV file."""
     if self._fieldnames is None:
-      self._fieldnames = values.keys()
+      self._fieldnames = list(values.keys()) # had to change to convert to a list or else pickling get_state does not work
     # Open a file in 'append' mode, so we can continue logging safely to the
     # same file after e.g. restarting from a checkpoint.
     with open(self._fname, 'a') as file:
@@ -511,6 +512,53 @@ class NullCheckpoint:
 
   def restore(self) -> None:
     pass
+
+
+class Checkpoint:
+  """A checkpointing object to be used when checkpointing is not null.
+  """
+
+  def __init__(self):
+    self.state = AttributeDict()
+
+  def save(self) -> None:
+    filepath = self.filepath
+    payload = {}
+    payload['iteration'] = self.state.iteration
+    payload['train_agent'] = self.state.train_agent.get_state()
+    payload['eval_agent'] = self.state.eval_agent.get_state()
+    payload['random_state'] = self.state.random_state
+    payload['writer'] = self.state.writer.get_state()
+    try:
+      with open(filepath, 'wb') as file:
+        pickle.dump(payload, file)
+    except Exception as e:
+      if os.path.exists(filepath):
+        os.remove(filepath)
+      raise e
+  
+  @property
+  def filepath(self) -> str:
+    return os.path.splitext(self.state.writer._fname)[0] + '.chkpt'
+
+  def can_be_restored(self) -> bool:
+    """Checks to see if the file exists in the expected location with the '.chkpt' extension.
+    """
+    looking_for = self.filepath
+    if os.path.basename(looking_for) in os.listdir(os.path.dirname(looking_for)):
+      if os.path.isfile(looking_for):
+        return True
+    return False
+
+  def restore(self) -> None:
+    with open(self.filepath, 'rb') as file:
+      payload = pickle.load(file)
+    self.state.iteration = payload['iteration']
+    self.state.train_agent.set_state(payload['train_agent'])
+    self.state.eval_agent.set_state(payload['eval_agent'])
+    self.state.random_state = payload['random_state']
+    self.state.writer.set_state(payload['writer'])
+    self.state.writer._header_written = True
 
 
 class AttributeDict(dict):

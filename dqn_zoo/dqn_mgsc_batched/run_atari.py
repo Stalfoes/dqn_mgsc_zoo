@@ -105,8 +105,8 @@ def main(argv):
   """Trains DQN agent on Atari."""
   del argv
   logging.info('DQN with MGSC with batches of size=%d on Atari on %s.', _META_BATCH_SIZE.value, jax.lib.xla_bridge.get_backend().platform)
-  random_state = np.random.default_rng(_SEED.value) # default_rng
-  rng_key = jax.random.PRNGKey(
+  random_state = np.random.default_rng(_SEED.value)
+  rng_key = jax.random.PRNGKey( # This also isn't checkpointed properly
       int(random_state.integers(-sys.maxsize - 1, sys.maxsize + 1, dtype=np.int64))
   )
 #   rng_key, replay_rng_key = jax.random.split(rng_key)
@@ -116,6 +116,9 @@ def main(argv):
   else:
     writer = parts.NullWriter()
 
+	# This isn't done right...
+	# If a checkpoint is loaded, the random_state that builds the environment here would not be updated
+	# 	to give the same environments you'd get if you never checkpointed in the first place
   def environment_builder():
     """Creates Atari environment."""
     env = gym_atari.GymAtari(
@@ -248,7 +251,7 @@ def main(argv):
   )
 
   # Set up checkpointing.
-  checkpoint = parts.NullCheckpoint()
+  checkpoint = parts.Checkpoint()
 
   state = checkpoint.state
   state.iteration = 0

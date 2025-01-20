@@ -91,12 +91,13 @@ def data_to_x_y(data:Dict[KeyType,ValueType]) -> Tuple[List[KeyType], List[Value
 
 
 if __name__ == "__main__":
+    environment = 'alien'
     # averaged_data = average_single_seed_csv_files(lambda s: f'./results/dqn/seed_{s}.csv', range(0,5), 'frame', 'eval_episode_return')
-    dqn_data = load_data_multi_seed_average_csv('/home/kapeluck/scratch/dqn_zoo_results/dqn.csv', 'jamesbond', 'frame', 'eval_episode_return')
-    prioritized_experience_data = load_data_multi_seed_average_csv('/home/kapeluck/scratch/dqn_zoo_results/prioritized.csv', 'jamesbond', 'frame', 'eval_episode_return')
-    metabatchsize_10_data = average_single_seed_csv_files(lambda s: f'/home/kapeluck/scratch/dqn_zoo_results/results/mgscdqn_batched_100m/metasize_10/seed_{s}.csv', range(5), 'frame', 'eval_episode_return')
-    metabatchsize_50_data = average_single_seed_csv_files(lambda s: f'/home/kapeluck/scratch/dqn_zoo_results/results/mgscdqn_batched_100m/metasize_50/seed_{s}.csv', range(5), 'frame', 'eval_episode_return')
-    metabatchsize_100_data = average_single_seed_csv_files(lambda s: f'/home/kapeluck/scratch/dqn_zoo_results/results/mgscdqn_batched_100m/metasize_100/seed_{s}.csv', range(5), 'frame', 'eval_episode_return')
+    dqn_data = load_data_multi_seed_average_csv('/home/kapeluck/scratch/dqn_zoo_results/dqn.csv', environment, 'frame', 'eval_episode_return')
+    prioritized_experience_data = load_data_multi_seed_average_csv('/home/kapeluck/scratch/dqn_zoo_results/prioritized.csv', environment, 'frame', 'eval_episode_return')
+    metabatchsize_10_data = average_single_seed_csv_files(lambda s: f'/home/kapeluck/scratch/dqn_zoo_results/results/mgscdqn_batched_100m/{environment}/metasize_10/seed_{s}.csv', range(5), 'frame', 'eval_episode_return')
+    metabatchsize_50_data = average_single_seed_csv_files(lambda s: f'/home/kapeluck/scratch/dqn_zoo_results/results/mgscdqn_batched_100m/{environment}/metasize_50/seed_{s}.csv', range(5), 'frame', 'eval_episode_return')
+    metabatchsize_100_data = average_single_seed_csv_files(lambda s: f'/home/kapeluck/scratch/dqn_zoo_results/results/mgscdqn_batched_100m/{environment}/metasize_100/seed_{s}.csv', range(5), 'frame', 'eval_episode_return')
 
     # plt.plot(X, list(averaged_data.values()), label='DQN Luke', color='blue', markeredgecolor='black')
     plt.plot(*data_to_x_y(metabatchsize_10_data), label='MGSCDQN meta-batch-size=10', color='blue', markeredgecolor='black')
@@ -107,6 +108,6 @@ if __name__ == "__main__":
     plt.legend()
     plt.xlabel('Frame (millions)')
     plt.ylabel('Episodic Return')
-    plt.savefig('/home/kapeluck/scratch/dqn_zoo_results/results/mgscdqn_batched_100m/dqn_vs_prioritized_vs_mgscdqn.png')
+    plt.savefig(f'/home/kapeluck/scratch/dqn_zoo_results/results/mgscdqn_batched_100m/{environment}/dqn_vs_prioritized_vs_mgscdqn.png')
     plt.clf()
     
