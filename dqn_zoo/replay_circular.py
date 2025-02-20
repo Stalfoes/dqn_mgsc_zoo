@@ -202,7 +202,7 @@ class CircularLogitBuffer:
     self._logits[idx] = item
   def as_probs(self) -> np.ndarray:
     return probabilities_from_logits(self._logits)
-  def sample(self, size:int) -> jnp.ndarray:
+  def sample(self, size:int) -> np.ndarray:
     if self._size < size:
       raise BufferError(f"Cannot sample from buffer with length {self._size} when requested sample size was {size}.")
     absolute_indices = self._rng_state.choice(self._capacity, size=size, p=self.as_probs())
@@ -215,7 +215,7 @@ class CircularLogitBuffer:
     #   raise e
     indices = (absolute_indices - self._left_head) % self._capacity
     return indices
-  def sample_uniform(self, size:int, replace:bool=True) -> jnp.ndarray:
+  def sample_uniform(self, size:int, replace:bool=True) -> np.ndarray:
     if self._size < size:
       raise BufferError(f"Cannot sample from buffer with length {self._size} when requested sample size was {size}.")
     relative_indices = self._rng_state.choice(self._size, size=size, replace=replace)
@@ -495,6 +495,175 @@ class ReservoirTransitionReplay(Generic[ReplayStructure]):
     if set(self._storage.keys()) != set(self._distribution.ids()):
       return False, 'IDs in storage and distribution do not match.'
     return self._distribution.check_valid()
+
+
+class MGSCReservoirDistribution:
+  """Distribution for weighted sampling of user-defined integer IDs."""
+  def __init__(self, rng_state: np.random.Generator, capacity: int):
+    self._capacity = capacity
+    self._logits = np.full((capacity,), -np.inf, dtype=np.float32)
+    self._size = 0
+    self._rng_state = rng_state
+  @property
+  def capacity(self) -> int:
+    return self._capacity
+  @property
+  def size(self) -> int:
+    return self._size
+  def is_full(self) -> bool:
+    return self._size == self._capacity
+  def add(self, priority: Optional[np.float32]=None) -> None:
+    """Add priorities onto the end of the buffer."""
+    if self.is_full():
+      raise BufferError("Buffer is full and cannot be added to. Pop an item first.")
+    if priority is None:
+      if self._size == 0:
+        priority = 0
+      else:
+        priority = logsumexp(self._logits) - np.log(self._size)
+    self._logits[self._size] = priority
+    self._size += 1
+  def replace(self, idx:int, priority:Optional[np.float32]=None) -> None:
+    """Replace the priority at a given index or reset it if priority is None."""
+    if self.is_full() == False:
+      raise BufferError(f"Buffer should be full before replacing. Current size={self._size} while capacity={self._capacity}.")
+    if priority is None:
+      self._logits[idx] = -np.inf
+      priority = logsumexp(self._logits) - np.log(self._size)
+    self._logits[idx] = priority
+  def __getitem__(self, key:int) -> np.float32:
+    if key < 0 or key >= self._size:
+      raise KeyError(f"Cannot index at {key} when buffer size is {self._size}. Must be [0,size).")
+    return self._logits[key]
+  def __setitem__(self, key:int, priority:np.float32):
+    self._logits[key] = priority
+  def as_probs(self) -> np.ndarray:
+    return probabilities_from_logits(self._logits)
+  def sample(self, size:int) -> np.ndarray:
+    """Returns sample of indices."""
+    if self._size < size:
+      raise BufferError(f"Cannot sample a batch of size {size} from buffer with size {self._size}.")
+    indices = self._rng_state.choice(self._capacity, size=size, p=self.as_probs())
+    return indices
+  def sample_uniform(self, size:int, replace:bool=True) -> np.ndarray:
+    """Returns uniform sample of indices."""
+    if self._size < size:
+      raise BufferError(f"Cannot sample a batch of size {size} from buffer with size {self._size}.")
+    indices = self._rng_state.choice(self._size, size=size, replace=replace)
+    return indices
+  def get_state(self) -> Mapping[str, Any]:
+    """Retrieves distribution state as a dictionary (e.g. for serialization)."""
+    return {
+        'capacity': self._capacity,
+        'logits': self._logits,
+        'size': self._size,
+        'rng_state': self._rng_state
+    }
+  def set_state(self, state: Mapping[str, Any]) -> None:
+    """Sets distribution state from a (potentially de-serialized) dictionary."""
+    self._capacity = state['capacity']
+    self._logits = state['logits']
+    self._size = state['size']
+    self._rng_state = state['rng_state']
+
+
+class MGSCReservoirTransitionReplay(Generic[ReplayStructure]):
+  """Uniform replay, with Reservoir Sampling storage for flat named tuples."""
+
+  def __init__(
+      self,
+      capacity: int,
+      structure: ReplayStructure,
+      random_state: np.random.Generator,
+      encoder: Optional[Callable[[ReplayStructure], Any]] = None,
+      decoder: Optional[Callable[[Any], ReplayStructure]] = None,
+  ):
+    self._capacity = capacity
+    self._structure = structure
+    self._random_state = random_state
+    self._encoder = encoder or (lambda s: s)
+    self._decoder = decoder or (lambda s: s)
+
+    self._distribution = MGSCReservoirDistribution(self._random_state, self._capacity)
+    self._storage = [None] * self._capacity
+    self._t = 0  # Used to keep track of how many items have attempted to enter the buffer
+    
+  def add(self, item: ReplayStructure) -> None:
+    """Adds single item to replay."""
+    if self.size == self._capacity:
+      # Perform Algorithm R
+      j = self._random_state.randint(0, self._t)
+      if j < self.size:
+        # kick and replace
+        self._storage[j] = self._encoder(item)
+        self._distribution.replace(j)
+      else:
+        pass # do nothing, don't add it or replace anything
+    else:
+      # Fill the buffer up to capacity
+      self._distribution.add()
+      self._storage[self._t] = self._encoder(item)
+    self._t += 1
+
+  def get(self, ids: Sequence[int]) -> Iterable[ReplayStructure]:
+    """Retrieves items by IDs."""
+    for i in ids:
+      yield self._decoder(self._storage[i])
+
+  def sample(self, size: int) -> ReplayStructure:
+    """Samples batch of items from replay according to the distribution."""
+    indices = self._distribution.sample(size)
+    return self.stack_transitions(indices)  # pytype: disable=not-callable
+
+  def stack_transitions(self, indices: Sequence[int]) -> ReplayStructure:
+    samples = self.get(indices)
+    transposed = zip(*samples)
+    stacked = [np.stack(xs, axis=0) for xs in transposed]
+    return type(self._structure)(*stacked)  # pytype: disable=not-callable
+
+  def batch_of_ids_transitions_and_logits(self, size: int) -> Tuple[Sequence[int], ReplayStructure, Sequence[float]]:
+    """Return a batch of transitions sampled uniformly (not according to the distribution) without replacement."""
+    indices = self._distribution.sample_uniform(size, replace=False)
+    transitions = self.stack_transitions(indices)
+    logits = self._distribution[np.asarray(indices)]
+    return indices, transitions, logits
+
+  def update_priorities(self, indices:Sequence[int], priorities:Sequence[float]):
+    """Update the priorities of the associated IDs."""
+    self._distribution[np.asarray(indices)] = priorities
+
+  @property
+  def size(self) -> int:
+    """Number of items currently contained in the replay."""
+    return self._distribution.size
+
+  @property
+  def capacity(self) -> int:
+    """Total capacity of replay (max number of items stored at any one time)."""
+    return self._capacity
+
+  def get_state(self) -> Mapping[str, Any]:
+    """Retrieves replay state as a dictionary (e.g. for serialization)."""
+    return {
+      # Serialize OrderedDict as a simpler, more common data structure.
+      'storage': self._storage,
+      't': self._t,
+      'distribution': self._distribution.get_state(),
+      'rng_state': self._rng_state,
+      'capacity': self._capacity
+    }
+
+  def set_state(self, state: Mapping[str, Any]) -> None:
+    """Sets replay state from a (potentially de-serialized) dictionary."""
+    self._storage = state['storage']
+    self._t = state['t']
+    self._distribution.set_state(state['distribution'])
+    self._rng_state = state['rng_state']
+    self._capacity = state['capacity']
+
+  def check_valid(self) -> Tuple[bool, str]:
+    """Checks internal consistency."""
+    return True
 
 
 def _power(base, exponent) -> np.ndarray:

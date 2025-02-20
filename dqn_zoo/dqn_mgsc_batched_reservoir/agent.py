@@ -33,14 +33,7 @@ import time
 
 from dqn_zoo import parts
 from dqn_zoo import processors
-from dqn_zoo import replay_circular_nonsense as replay_lib
-
-
-def safe_div(a, b):
-  if b == 0:
-    return 0
-  return a, b
-
+from dqn_zoo import replay_circular as replay_lib
 
 # Batch variant of q_learning.
 _batch_q_learning = jax.vmap(rlax.q_learning)
@@ -56,7 +49,7 @@ class MGSCDqn(parts.Agent):
       network: parts.Network,
       optimizer: optax.GradientTransformation,
       transition_accumulator: Any,
-      replay: replay_lib.MGSCFiFoTransitionReplay,
+      replay: replay_lib.MGSCReservoirTransitionReplay,
       batch_size: int,
       exploration_epsilon: Callable[[int], float],
       min_replay_capacity_fraction: float,
@@ -65,8 +58,7 @@ class MGSCDqn(parts.Agent):
       grad_error_bound: float,
       rng_key: parts.PRNGKey,
       meta_optimizer: optax.GradientTransformation,
-      meta_batch_size: int,
-      nonsense_transition_ratio: int,
+      meta_batch_size: int
   ):
     self._preprocessor = preprocessor
     self._replay = replay
@@ -77,49 +69,6 @@ class MGSCDqn(parts.Agent):
     self._learn_period = learn_period
     self._target_network_update_period = target_network_update_period
     self._meta_batch_size = meta_batch_size
-    self._nonsense_transition_ratio = nonsense_transition_ratio
-    self._logits_vs_time = {
-      'nonsense': {
-        'max': -float('inf'),
-        'min': float('inf'),
-        'entry': {
-          'sum': 0,
-          'num': 0
-        }, '1st_quarter': {
-          'sum': 0,
-          'num': 0
-        }, '2nd_quarter': {
-          'sum': 0,
-          'num': 0
-        }, '3rd_quarter': {
-          'sum': 0,
-          'num': 0
-        }, 'exit': {
-          'sum': 0,
-          'num': 0
-        }
-      },
-      'real': {
-        'max': -float('inf'),
-        'min': float('inf'),
-        'entry': {
-          'sum': 0,
-          'num': 0
-        }, '1st_quarter': {
-          'sum': 0,
-          'num': 0
-        }, '2nd_quarter': {
-          'sum': 0,
-          'num': 0
-        }, '3rd_quarter': {
-          'sum': 0,
-          'num': 0
-        }, 'exit': {
-          'sum': 0,
-          'num': 0
-        }
-      }
-    }
 
     # Initialize network parameters and optimizer.
     self._rng_key, network_rng_key = jax.random.split(rng_key)
@@ -129,6 +78,16 @@ class MGSCDqn(parts.Agent):
     self._target_params = self._online_params
     self._opt_state = optimizer.init(self._online_params)
     self._meta_opt_state = meta_optimizer.init(jnp.zeros((self._meta_batch_size,), dtype=jnp.float32))
+
+    # debugging help
+    # self._debugging_num_meta_update_calls = 0
+    # self.times = {'meta-update': {'total_time': 0, 'num_calls': 0},
+    #               'update': {'total_time': 0, 'num_calls': 0},
+    #               'replay-sample-meta-batch': {'total_time': 0, 'num_calls': 0},
+    #               'replay-sample-batch': {'total_time': 0, 'num_calls': 0},
+    #               'replay-add': {'total_time': 0, 'num_calls': 0},
+    #               'replay-update': {'total_time': 0, 'num_calls': 0}
+    #              }
 
     # To help with the meta-gradient-learn step
     self._last_transitions = []
@@ -143,6 +102,9 @@ class MGSCDqn(parts.Agent):
     # and should not access the agent object's state via `self`.
 
     def norm_of_pytree(params, target_params):
+      # l2_norms = jax.tree_util.tree_map(lambda t, e: jnp.linalg.norm(t - e, ord=None) ** 2, target_params, params) # This is a for-loop!
+      # l2_norms_list, _ = jax.tree_util.tree_flatten(l2_norms)
+      # reduced = jnp.sum(jnp.array(l2_norms_list))
       squared_difference = jax.tree_util.tree_map(lambda p, t: jnp.sum((p - t) ** 2), params, target_params)
       reduced = jax.tree_util.tree_reduce(lambda a, b: a + b, squared_difference) # just calls reduce on the leaves
       return reduced
@@ -173,6 +135,10 @@ class MGSCDqn(parts.Agent):
       losses = loss_fn_no_mean(online_params, target_params, transitions, rng_key)
       loss = jnp.mean(losses) # Take the mean of the array of floats
       return loss
+    
+    # def exp_loss_fn(online_params, target_params, transitions, probabilities, rng_key):
+    #   losses = loss_fn_no_mean(online_params, target_params, transitions, rng_key)
+    #   return jnp.dot(probabilities, losses) # dot product the probabilities with the losses
 
     def batch_single_transition(transition): # Is this an expensive operation?
       return replay_lib.Transition(
@@ -198,21 +164,37 @@ class MGSCDqn(parts.Agent):
       
       probabilities = replay_lib.JNPprobabilities_from_logits(logits)
 
+      # jax.debug.print("\tcomputed the probabilities to be {}", probabilities)
+      
+      # chex.assert_tree_all_finite(probabilities)
+
       weighted_gradients = jax.vmap(weighted_grads, (None,None,0,0,None))(online_params, target_params, transitions, probabilities, exp_loss_key)
       summed_weighted_grads = jax.tree_util.tree_map(lambda g: jnp.sum(g, axis=0), weighted_gradients)
       
+      # chex.assert_tree_all_finite(summed_weighted_grads)
+
+      # summed_weighted_grads = jnp.dot(probabilities, gradients) # maybe this can be a vmap of multiplication against the pytree gradients
+      # summed_weighted_grads = jax.grad(exp_loss_fn)(online_params, target_params, transitions, probabilities, exp_loss_key) # this seems to be expensive to compute the gradient here
       updates, new_opt_state = optimizer.update(summed_weighted_grads, opt_state)
       expected_online_params = optax.apply_updates(online_params, updates)
+
+      # chex.assert_tree_all_finite(expected_online_params)
 
       gradients_of_expected_params = jax.grad(loss_fn)(
           expected_online_params, online_params, online_transition, target_loss_key
       )
+      # chex.assert_tree_all_finite(d_loss_d_expected_params)
 
       # It's possible that since RMS is prop is too high-order of an optimizer, Adam going over that leads to instability
       target_updates, new_opt_state = optimizer.update(gradients_of_expected_params, new_opt_state)
       target_online_params = optax.apply_updates(expected_online_params, target_updates)
 
+      # chex.assert_tree_all_finite(target_online_params)
+
       loss = norm_of_pytree(expected_online_params, target_online_params)
+      # jax.debug.print("\tcomputed the loss to be {}", loss)
+      # jax.debug.print("completed forward pass of meta_loss_fn")
+      # chex.assert_tree_all_finite(loss)
       return loss
 
     def update(rng_key, opt_state, online_params, target_params, transitions):
@@ -226,9 +208,12 @@ class MGSCDqn(parts.Agent):
       return rng_key, new_opt_state, new_online_params
 
     def meta_update(rng_key, opt_state, meta_opt_state, online_params, target_params, transitions, logits, online_transition):
+      # logits = jnp.asarray(logits_list, dtype=jnp.float32) # is this necessary to do since it's a numpy array?
+      # jax.debug.print("starting grad call of meta_loss_fn ...")
       gradients_of_meta_params = jax.grad(meta_loss_fn)(
           logits, transitions, online_params, target_params, online_transition, opt_state, rng_key
       )
+      # chex.assert_tree_all_finite(d_loss_d_meta_params)
       meta_params_updates, new_meta_opt_state = meta_optimizer.update(gradients_of_meta_params, meta_opt_state)
       new_meta_params = optax.apply_updates(logits, meta_params_updates)
       return rng_key, new_meta_opt_state, new_meta_params
@@ -266,6 +251,7 @@ class MGSCDqn(parts.Agent):
     # Meta-prioritization learn step
     if (self._frame_t % self._learn_period == 0) and (self._replay.size >= max(self._meta_batch_size, self._min_replay_capacity)):
       if len(self._last_transitions) != 0:
+        # print(f"Doing a meta-learning train step on frame={self._frame_t} ...")
         trans = self._last_transitions[-1] # TODO -- should we just be taking the most recent transition? maybe we can perform multiple updates?
         self._meta_prioritization_learn(trans)
         self._last_transitions.clear()
@@ -274,39 +260,12 @@ class MGSCDqn(parts.Agent):
     if not (timestep is None):
       # Add states to replay buffer
       for transition in transitions:
-        if self._replay._t % self._nonsense_transition_ratio == 0 and self._replay._t > 0:
-          # Jumble the transition up to make it more likely to be nonsensical
-          jumbled_transition = transition._replace(
-            s_tm1 = self._replay._storage[0].s_tm1,
-            a_t = self._replay._storage[self._replay._storage.size - 1].a_t,
-            s_t = self._replay._storage[self._replay._storage.size,/ 2].s_t,
-            r_t = self._replay._storage[self._replay._storage.size,/ 4].r_t,
-          )
-          self._replay.add(jumbled_transition, nonsense=True)
-        else:
-          self._replay.add(transition)
-      # Update the nonsense statistics
-      for idx in range(0, self._replay._storage.size):
-        rel_idx = self._replay._storage._rel_idx_to_abs(idx)
-        nonsense_real_key = 'nonsense' if self._replay._storage._is_nonsense[rel_idx] else 'real'
-        logit_value = self._replay._distribution[idx]
-        self._logits_vs_time[nonsense_real_key]['max'] = max(logit_value, self._logits_vs_time[nonsense_real_key]['max'])
-        self._logits_vs_time[nonsense_real_key]['min'] = min(logit_value, self._logits_vs_time[nonsense_real_key]['min'])
-        if idx == 0:
-          self._logits_vs_time[nonsense_real_key]['exit']['sum'] += logit_value
-          self._logits_vs_time[nonsense_real_key]['exit']['num'] += 1
-        elif idx == (self._replay._storage.size,/ 4):
-          self._logits_vs_time[nonsense_real_key]['3rd_quarter']['sum'] += logit_value
-          self._logits_vs_time[nonsense_real_key]['3rd_quarter']['num'] += 1
-        elif idx == (self._replay._storage.size,/ 2):
-          self._logits_vs_time[nonsense_real_key]['2nd_quarter']['sum'] += logit_value
-          self._logits_vs_time[nonsense_real_key]['2nd_quarter']['num'] += 1
-        elif idx == (3 * (self._replay._storage.size,/ 4)):
-          self._logits_vs_time[nonsense_real_key]['1st_quarter']['sum'] += logit_value
-          self._logits_vs_time[nonsense_real_key]['1st_quarter']['num'] += 1
-        elif idx == self._replay._storage.size - 1:
-          self._logits_vs_time[nonsense_real_key]['entry']['sum'] += logit_value
-          self._logits_vs_time[nonsense_real_key]['entry']['num'] += 1
+        # s = time.time()
+        self._replay.add(transition)
+        # e = time.time()
+        # self.times['replay-add']['total_time'] += e - s
+        # self.times['replay-add']['num_calls'] += 1
+
 
     if self._replay.size < self._min_replay_capacity:
       return action
@@ -318,24 +277,6 @@ class MGSCDqn(parts.Agent):
       self._target_params = self._online_params
 
     return action
-
-  def logit_value_stats(self) -> list[tuple[str, Any, str]]:
-    return [
-      ('nonsense_max', self._logits_vs_time['nonsense']['max'], '%.3f'),
-      ('nonsense_min', self._logits_vs_time['nonsense']['min'], '%.3f'),
-      ('real_max', self._logits_vs_time['real']['max'], '%.3f'),
-      ('real_min', self._logits_vs_time['real']['min'], '%.3f'),
-      ('nonsense_entry_avg', safe_div(self._logits_vs_time['nonsense']['entry']['sum'], self._logits_vs_time['nonsense']['entry']['num']), '%.3f'),
-      ('nonsense_1st_quarter_avg', safe_div(self._logits_vs_time['nonsense']['1st_quarter']['sum'], self._logits_vs_time['nonsense']['1st_quarter']['num']), '%.3f'),
-      ('nonsense_2nd_quarter_avg', safe_div(self._logits_vs_time['nonsense']['2nd_quarter']['sum'], self._logits_vs_time['nonsense']['2nd_quarter']['num']), '%.3f'),
-      ('nonsense_3rd_quarter_avg', safe_div(self._logits_vs_time['nonsense']['3rd_quarter']['sum'], self._logits_vs_time['nonsense']['3rd_quarter']['num']), '%.3f'),
-      ('nonsense_exit_avg', safe_div(self._logits_vs_time['nonsense']['exit']['sum'], self._logits_vs_time['nonsense']['exit']['num']), '%.3f'),
-      ('real_entry_avg', safe_div(self._logits_vs_time['real']['entry']['sum'], self._logits_vs_time['real']['entry']['num']), '%.3f'),
-      ('real_1st_quarter_avg', safe_div(self._logits_vs_time['real']['1st_quarter']['sum'], self._logits_vs_time['real']['1st_quarter']['num']), '%.3f'),
-      ('real_2nd_quarter_avg', safe_div(self._logits_vs_time['real']['2nd_quarter']['sum'], self._logits_vs_time['real']['2nd_quarter']['num']), '%.3f'),
-      ('real_3rd_quarter_avg', safe_div(self._logits_vs_time['real']['3rd_quarter']['sum'], self._logits_vs_time['real']['3rd_quarter']['num']), '%.3f'),
-      ('real_exit_avg', safe_div(self._logits_vs_time['real']['exit']['sum'], self._logits_vs_time['real']['exit']['num']), '%.3f'),
-    ]
 
   def reset(self) -> None:
     """Resets the agent's episodic state such as frame stack and action repeat.
@@ -446,7 +387,7 @@ class MGSCDqn(parts.Agent):
         'target_params': self._target_params,
         'replay': self._replay.get_state(),
         'meta_opt_state': self._meta_opt_state,
-        'logits_vs_time': self._logits_vs_time
+
     }
     return state
 
@@ -459,4 +400,3 @@ class MGSCDqn(parts.Agent):
     self._target_params = jax.device_put(state['target_params'])
     self._replay.set_state(state['replay'])
     self._meta_opt_state = state['meta_opt_state']
-    self._logits_vs_time = state['logits_vs_time']
