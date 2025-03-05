@@ -7,7 +7,7 @@
 #SBATCH --mem=35G
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=2
-#SBATCH --gpus-per-node=a100:1
+#SBATCH --gpus-per-node=v100:1
 #SBATCH --ntasks-per-node=1
 #SBATCH --account=rrg-mbowling-ad
 #SBATCH --mail-user=kapeluck@ualberta.ca

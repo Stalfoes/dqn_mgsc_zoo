@@ -282,7 +282,7 @@ class UniformDistribution:
 
   def sample(self, size: int) -> np.ndarray:
     """Returns sample of IDs, uniformly sampled."""
-    indices = self._random_state.randint(self.size, size=size)
+    indices = self._random_state.integers(self.size, size=size)
     ids = np.fromiter(
         (self._ids[idx] for idx in indices), dtype=np.int64, count=len(indices)
     )
@@ -432,7 +432,7 @@ class ReservoirTransitionReplay(Generic[ReplayStructure]):
     """Adds single item to replay."""
     if self.size == self._capacity:
       # Perform Algorithm R
-      j = self._random_state.randint(0, self._t)
+      j = self._random_state.integers(0, self._t)
       if j < self.size:
         # kick and replace
         item_id = j
@@ -532,8 +532,6 @@ class MGSCReservoirDistribution:
       priority = logsumexp(self._logits) - np.log(self._size)
     self._logits[idx] = priority
   def __getitem__(self, key:int) -> np.float32:
-    if key < 0 or key >= self._size:
-      raise KeyError(f"Cannot index at {key} when buffer size is {self._size}. Must be [0,size).")
     return self._logits[key]
   def __setitem__(self, key:int, priority:np.float32):
     self._logits[key] = priority
@@ -592,7 +590,7 @@ class MGSCReservoirTransitionReplay(Generic[ReplayStructure]):
     """Adds single item to replay."""
     if self.size == self._capacity:
       # Perform Algorithm R
-      j = self._random_state.randint(0, self._t)
+      j = self._random_state.integers(0, self._t)
       if j < self.size:
         # kick and replace
         self._storage[j] = self._encoder(item)
@@ -649,7 +647,7 @@ class MGSCReservoirTransitionReplay(Generic[ReplayStructure]):
       'storage': self._storage,
       't': self._t,
       'distribution': self._distribution.get_state(),
-      'rng_state': self._rng_state,
+      'random_state': self._random_state,
       'capacity': self._capacity
     }
 
@@ -658,7 +656,7 @@ class MGSCReservoirTransitionReplay(Generic[ReplayStructure]):
     self._storage = state['storage']
     self._t = state['t']
     self._distribution.set_state(state['distribution'])
-    self._rng_state = state['rng_state']
+    self._random_state = state['random_state']
     self._capacity = state['capacity']
 
   def check_valid(self) -> Tuple[bool, str]:
@@ -1016,7 +1014,7 @@ class PrioritizedDistribution:
       raise RuntimeError('No IDs to sample.')
     uniform_indices = [
         self._active_indices[j]
-        for j in self._random_state.randint(self.size, size=size)
+        for j in self._random_state.integers(self.size, size=size)
     ] # randomly sample `size` number of indices
 
     if self._sum_tree.root() == 0.0: # the sum of values in the tree is 0

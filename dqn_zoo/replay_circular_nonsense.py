@@ -149,7 +149,7 @@ class CircularBuffer(Generic[ItemType]):
     self._size = state['size']
     self._left_head = state['left_head']
     self._right_head = state['right_head']
-    self._is_nonsense = state['nonsense']
+    self._is_nonsense = state['is_nonsense']
 
 class CircularLogitBuffer:
   def __init__(self, capacity:int, random_state:np.random.Generator):
@@ -197,13 +197,21 @@ class CircularLogitBuffer:
   def __getitem__(self, key):
     if self._size == 0:
       raise BufferError("Buffer is empty and cannot be indexed. Add an item first.")
-    if (key >= self._size).any():
-      raise KeyError(f"Buffer is not large enough to index at position {key}. Must be in [0,{self.size-1}).")
+    if isinstance(key, (np.ndarray, jnp.ndarray)):
+      if (key >= self._size).any():
+        raise KeyError(f"Buffer is not large enough to index at position {key}. Must be in [0,{self.size-1}).")
+    else:
+      if key >= self._size:
+        raise KeyError(f"Buffer is not large enough to index at position {key}. Must be in [0,{self.size-1}).")
     idx = (self._left_head + key) % self._capacity
     return self._logits[idx]
   def __setitem__(self, key, item):
-    if (key >= self._size).any():
-      raise KeyError(f"Buffer is not large enough to index at position {key}. Must be in [0,{self.size-1}).")
+    if isinstance(key, (np.ndarray, jnp.ndarray)):
+      if (key >= self._size).any():
+        raise KeyError(f"Buffer is not large enough to index at position {key}. Must be in [0,{self.size-1}).")
+    else:
+      if key >= self._size:
+        raise KeyError(f"Buffer is not large enough to index at position {key}. Must be in [0,{self.size-1}).")
     idx = (self._left_head + key) % self._capacity
     self._logits[idx] = item
   def as_probs(self) -> np.ndarray:
@@ -1082,7 +1090,10 @@ class MGSCFiFoTransitionReplay(Generic[ReplayStructure]):
       self._storage.popleft()
 
     self._distribution.add()
-    self._storage.add(self._encoder(item), nonsense=nonsense)
+    if nonsense == True:
+      self._storage.add(item, nonsense=True) # it's already encoded since it grabs from already encoded items
+    else:
+      self._storage.add(self._encoder(item), nonsense=False) # need to encode it
     self._t += 1
 
   def get(self, indices: Sequence[int]) -> Iterable[ReplayStructure]:

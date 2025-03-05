@@ -243,7 +243,7 @@ def main(argv):
         learning_rate = _META_LEARNING_RATE.value
       ),
       meta_batch_size=_META_BATCH_SIZE.value,
-      nonsense_transition_ratio=_NONSENSE_TRANSITION_RATIO,
+      nonsense_transition_ratio=_NONSENSE_TRANSITION_RATIO.value,
   )
   eval_agent = parts.EpsilonGreedyActor(
       preprocessor=preprocessor_builder(),

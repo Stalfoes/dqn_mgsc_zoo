@@ -278,9 +278,10 @@ class MGSCDqn(parts.Agent):
           # Jumble the transition up to make it more likely to be nonsensical
           jumbled_transition = transition._replace(
             s_tm1 = self._replay._storage[0].s_tm1,
-            a_t = self._replay._storage[self._replay._storage.size - 1].a_t,
-            s_t = self._replay._storage[self._replay._storage.size,/ 2].s_t,
-            r_t = self._replay._storage[self._replay._storage.size,/ 4].r_t,
+            a_tm1 = self._replay._storage[self._replay._storage.size - 1].a_tm1,
+            r_t = self._replay._storage[self._replay._storage.size // 4].r_t,
+            discount_t = self._replay._storage[self._replay._storage.size // 3].discount_t,
+            s_t = self._replay._storage[self._replay._storage.size // 2].s_t,
           )
           self._replay.add(jumbled_transition, nonsense=True)
         else:
@@ -295,13 +296,13 @@ class MGSCDqn(parts.Agent):
         if idx == 0:
           self._logits_vs_time[nonsense_real_key]['exit']['sum'] += logit_value
           self._logits_vs_time[nonsense_real_key]['exit']['num'] += 1
-        elif idx == (self._replay._storage.size,/ 4):
+        elif idx == (self._replay._storage.size // 4):
           self._logits_vs_time[nonsense_real_key]['3rd_quarter']['sum'] += logit_value
           self._logits_vs_time[nonsense_real_key]['3rd_quarter']['num'] += 1
-        elif idx == (self._replay._storage.size,/ 2):
+        elif idx == (self._replay._storage.size // 2):
           self._logits_vs_time[nonsense_real_key]['2nd_quarter']['sum'] += logit_value
           self._logits_vs_time[nonsense_real_key]['2nd_quarter']['num'] += 1
-        elif idx == (3 * (self._replay._storage.size,/ 4)):
+        elif idx == (3 * (self._replay._storage.size // 4)):
           self._logits_vs_time[nonsense_real_key]['1st_quarter']['sum'] += logit_value
           self._logits_vs_time[nonsense_real_key]['1st_quarter']['num'] += 1
         elif idx == self._replay._storage.size - 1:
