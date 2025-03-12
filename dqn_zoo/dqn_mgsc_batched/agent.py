@@ -188,6 +188,7 @@ class MGSCDqn(parts.Agent):
       # It's possible that since RMS is prop is too high-order of an optimizer, Adam going over that leads to instability
       target_updates, new_opt_state = optimizer.update(gradients_of_expected_params, new_opt_state)
       target_online_params = optax.apply_updates(expected_online_params, target_updates)
+      target_online_params = jax.lax.stop_gradient(target_online_params) # NEW ADDITION
 
       # chex.assert_tree_all_finite(target_online_params)
 
